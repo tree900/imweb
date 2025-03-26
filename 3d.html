@@ -1,0 +1,84 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>3D Text Globe</title>
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+
+  <!-- ✅ 반드시 <head> 또는 <body> 위쪽에 라이브러리 불러오기 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r148/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.148.0/examples/js/loaders/FontLoader.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.148.0/examples/js/geometries/TextGeometry.min.js"></script>
+</head>
+<body>
+  <script>
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+    camera.position.z = 200;
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(350, 350);
+    document.body.appendChild(renderer.domElement);
+
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(1, 1, 1);
+    scene.add(light);
+
+    const ambient = new THREE.AmbientLight(0x888888);
+    scene.add(ambient);
+
+    const loader = new THREE.FontLoader();
+    loader.load("./fonts/helvetiker_regular.typeface.json", function (font) {
+      const words = ["BEIPINK", "UNIVERSE"];
+      const sphereRadius = 90;
+      const wordCount = 36;
+
+      for (let i = 0; i < wordCount; i++) {
+        const word = words[i % words.length];
+
+        const textGeometry = new THREE.TextGeometry(word, {
+          font: font,
+          size: 6,
+          height: 1.5,
+          curveSegments: 6,
+        });
+
+        const material = new THREE.MeshStandardMaterial({ color: 0xfdf6e3 });
+        const mesh = new THREE.Mesh(textGeometry, material);
+
+        const phi = Math.acos(-1 + (2 * i) / wordCount);
+        const theta = Math.sqrt(wordCount * Math.PI) * phi;
+
+        mesh.position.x = sphereRadius * Math.cos(theta) * Math.sin(phi);
+        mesh.position.y = sphereRadius * Math.sin(theta) * Math.sin(phi);
+        mesh.position.z = sphereRadius * Math.cos(phi);
+
+        mesh.lookAt(0, 0, 0);
+        scene.add(mesh);
+      }
+
+      animate();
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      scene.rotation.y += 0.002;
+      renderer.render(scene, camera);
+    }
+  </script>
+</body>
+</html>
