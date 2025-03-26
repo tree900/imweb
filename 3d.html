@@ -19,7 +19,7 @@
   </style>
 </head>
 <body>
-  <!-- Three.js -->
+  <!-- ✅ 반드시 이 순서로 Three.js 라이브러리 불러오기 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r148/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.148.0/examples/js/loaders/FontLoader.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.148.0/examples/js/geometries/TextGeometry.min.js"></script>
@@ -40,6 +40,7 @@
     const ambient = new THREE.AmbientLight(0x888888);
     scene.add(ambient);
 
+    // ✅ 네가 GitHub에 업로드한 폰트 경로로 불러오기
     const loader = new THREE.FontLoader();
     loader.load('./fonts/helvetiker_regular.typeface.json', function (font) {
       const words = ["BEIPINK", "UNIVERSE"];
@@ -56,7 +57,7 @@
           curveSegments: 6
         });
 
-        const material = new THREE.MeshStandardMaterial({ color: 0xfdf6e3 });
+        const material = new THREE.MeshStandardMaterial({ color: 0xfdf6e3 }); // 아이보리
         const mesh = new THREE.Mesh(textGeometry, material);
 
         const phi = Math.acos(-1 + (2 * i) / wordCount);
