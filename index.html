@@ -4,19 +4,11 @@
   <meta charset="UTF-8" />
   <title>BEIPINK UNIVERS Sphere</title>
   <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: black;
-    }
+    body { margin: 0; overflow: hidden; background: black; }
   </style>
 </head>
 <body>
-  <!-- three.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.min.js"></script>
-  <!-- three-spritetext (글로벌 방식) -->
-  <script src="https://cdn.jsdelivr.net/npm/three-spritetext@1.11.2/build/spritetext.umd.js"></script>
-
   <script>
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -29,8 +21,28 @@
     const light = new THREE.AmbientLight(0xffffff, 1);
     scene.add(light);
 
+    // 텍스트를 Canvas로 만든 뒤 텍스처로 변환
+    function createTextTexture(text, color = "#ff69b4", fontSize = 64) {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = 512;
+      canvas.height = 128;
+
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.fillStyle = color;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      return texture;
+    }
+
+    const texture = createTextTexture("BEIPINK UNIVERS");
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
     const radius = 2;
     const count = 120;
+
     for (let i = 0; i < count; i++) {
       const phi = Math.acos(-1 + (2 * i) / count);
       const theta = Math.sqrt(count * Math.PI) * phi;
@@ -39,12 +51,11 @@
       const y = radius * Math.sin(theta) * Math.sin(phi);
       const z = radius * Math.cos(phi);
 
-      const text = new SpriteText("BEIPINK UNIVERS");
-      text.color = "#ff69b4";
-      text.textHeight = 0.25;
-      text.position.set(x, y, z);
-      text.lookAt(0, 0, 0);
-      scene.add(text);
+      const sprite = new THREE.Sprite(material.clone());
+      sprite.scale.set(1, 0.25, 1); // 텍스트 비율
+      sprite.position.set(x, y, z);
+      sprite.lookAt(0, 0, 0); // 구 중심 바라보게
+      scene.add(sprite);
     }
 
     window.addEventListener('resize', () => {
