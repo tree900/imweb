@@ -2,18 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>3D Text Globe</title>
+  <title>3D Text (로컬 빌드 버전)</title>
   <style>
-    body { margin: 0; background: black; overflow: hidden; }
+    body { margin: 0; overflow: hidden; background: #000; }
     canvas { display: block; }
   </style>
-  <script src="./libs/three.min.js"></script>
-  <script src="./libs/OrbitControls.js"></script>
-  <script src="./libs/FontLoader.js"></script>
-  <script src="./libs/TextGeometry.js"></script>
 </head>
 <body>
-  <script>
+  <script type="module">
+    import * as THREE from './build/three.module.min.js';
+    import { OrbitControls } from './examples/jsm/controls/OrbitControls.js';
+    import { FontLoader } from './examples/jsm/loaders/FontLoader.js';
+    import { TextGeometry } from './examples/jsm/geometries/TextGeometry.js';
+
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.z = 200;
@@ -22,46 +23,26 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
 
+    scene.add(new THREE.AmbientLight(0x888888));
     const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(1, 1, 1);
     scene.add(light);
 
-    const ambient = new THREE.AmbientLight(0x888888);
-    scene.add(ambient);
-
-    const loader = new THREE.FontLoader();
-    loader.load("./fonts/helvetiker_regular.typeface.json", function (font) {
-      const words = ["BEIPINK", "UNIVERSE"];
-      const radius = 90;
-      const count = 36;
-
-      for (let i = 0; i < count; i++) {
-        const word = words[i % words.length];
-        const geo = new THREE.TextGeometry(word, {
-          font,
-          size: 6,
-          height: 1.5,
-          curveSegments: 6,
-        });
-        const mat = new THREE.MeshStandardMaterial({ color: 0xfdf6e3 });
-        const mesh = new THREE.Mesh(geo, mat);
-
-        const phi = Math.acos(-1 + (2 * i) / count);
-        const theta = Math.sqrt(count * Math.PI) * phi;
-
-        mesh.position.set(
-          radius * Math.cos(theta) * Math.sin(phi),
-          radius * Math.sin(theta) * Math.sin(phi),
-          radius * Math.cos(phi)
-        );
-        mesh.lookAt(0, 0, 0);
-        scene.add(mesh);
-      }
-
+    const loader = new FontLoader();
+    loader.load('./fonts/helvetiker_regular.typeface.json', font => {
+      const geometry = new TextGeometry('HELLO', {
+        font: font,
+        size: 6,
+        height: 1.5,
+        curveSegments: 6,
+      });
+      const material = new THREE.MeshStandardMaterial({ color: 0xfdf6e3 });
+      const mesh = new THREE.Mesh(geometry, material);
+      scene.add(mesh);
       animate();
     });
 
@@ -71,7 +52,7 @@
       renderer.render(scene, camera);
     }
 
-    window.addEventListener("resize", () => {
+    window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
