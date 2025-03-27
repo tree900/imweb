@@ -10,10 +10,10 @@
 </head>
 <body>
   <script type="module">
-    import * as THREE from './three/three.module.js';
-    import { OrbitControls } from './jsm/controls/OrbitControls.js';
-    import { FontLoader } from './jsm/loaders/FontLoader.js';
-    import { TextGeometry } from './jsm/geometries/TextGeometry.js';
+    import * as THREE from './build/three.module.js';
+    import { OrbitControls } from './examples/jsm/controls/OrbitControls.js';
+    import { FontLoader } from './examples/jsm/loaders/FontLoader.js';
+    import { TextGeometry } from './examples/jsm/geometries/TextGeometry.js';
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -30,7 +30,7 @@
     scene.add(ambientLight);
 
     const loader = new FontLoader();
-    loader.load('./fonts/helvetiker_regular.typeface.json', function (font) {
+    loader.load('./examples/fonts/helvetiker_regular.typeface.json', function (font) {
       const textMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
 
       const radius = 6;
@@ -74,12 +74,6 @@
       renderer.render(scene, camera);
     }
     animate();
-
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
   </script>
 </body>
 </html>
