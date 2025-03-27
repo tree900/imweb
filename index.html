@@ -1,48 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>BEIPINK UNIVERS Sphere</title>
+  <meta charset="UTF-8">
+  <title>BEIPINK UNIVERS Sphere - Babylon.js</title>
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
   <style>
-    body { margin: 0; overflow: hidden; background: black; }
+    html, body { margin: 0; overflow: hidden; width: 100%; height: 100%; background: black; }
+    canvas { width: 100%; height: 100%; display: block; }
   </style>
 </head>
 <body>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.min.js"></script>
+  <canvas id="renderCanvas"></canvas>
   <script>
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 5;
+    const canvas = document.getElementById("renderCanvas");
+    const engine = new BABYLON.Engine(canvas, true);
+    const scene = new BABYLON.Scene(engine);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+    // Camera
+    const camera = new BABYLON.ArcRotateCamera("Camera", Math.PI / 2, Math.PI / 2.5, 6, BABYLON.Vector3.Zero(), scene);
+    camera.attachControl(canvas, true);
 
-    const light = new THREE.AmbientLight(0xffffff, 1);
-    scene.add(light);
+    // Light
+    const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0), scene);
 
-    // 텍스트를 Canvas로 만든 뒤 텍스처로 변환
-    function createTextTexture(text, color = "#ff69b4", fontSize = 64) {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      canvas.width = 512;
-      canvas.height = 128;
+    // Create dynamic texture for text
+    function createTextPlane(text, color = "hotpink", size = 1) {
+      const dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", {width:512, height:128}, scene, false);
+      dynamicTexture.hasAlpha = true;
+      dynamicTexture.drawText(text, null, 90, "bold 64px Arial", color, "transparent", true);
 
-      ctx.font = `bold ${fontSize}px sans-serif`;
-      ctx.fillStyle = color;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-
-      const texture = new THREE.CanvasTexture(canvas);
-      return texture;
+      const plane = BABYLON.MeshBuilder.CreatePlane("textPlane", {width: size * 2, height: size / 1.5}, scene);
+      const mat = new BABYLON.StandardMaterial("textMat", scene);
+      mat.diffuseTexture = dynamicTexture;
+      mat.opacityTexture = dynamicTexture;
+      mat.emissiveColor = new BABYLON.Color3(1, 0.4, 0.7);
+      mat.backFaceCulling = false;
+      plane.material = mat;
+      return plane;
     }
 
-    const texture = createTextTexture("BEIPINK UNIVERS");
-    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
-    const radius = 2;
-    const count = 120;
-
+    // Place texts on a sphere
+    const radius = 2.2;
+    const count = 100;
     for (let i = 0; i < count; i++) {
       const phi = Math.acos(-1 + (2 * i) / count);
       const theta = Math.sqrt(count * Math.PI) * phi;
@@ -51,27 +50,27 @@
       const y = radius * Math.sin(theta) * Math.sin(phi);
       const z = radius * Math.cos(phi);
 
-      const sprite = new THREE.Sprite(material.clone());
-      sprite.scale.set(1, 0.25, 1); // 텍스트 비율
-      sprite.position.set(x, y, z);
-      sprite.lookAt(0, 0, 0); // 구 중심 바라보게
-      scene.add(sprite);
+      const label = createTextPlane("BEIPINK UNIVERS", "hotpink", 0.5);
+      label.position = new BABYLON.Vector3(x, y, z);
+      label.lookAt(BABYLON.Vector3.Zero());
     }
 
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+    // Animate
+    scene.registerBeforeRender(() => {
+      scene.meshes.forEach(mesh => {
+        if (mesh.name === "textPlane") {
+          mesh.rotate(BABYLON.Axis.Y, 0.002, BABYLON.Space.WORLD);
+        }
+      });
     });
 
-    function animate() {
-      requestAnimationFrame(animate);
-      scene.rotation.y += 0.002;
-      scene.rotation.x += 0.001;
-      renderer.render(scene, camera);
-    }
+    engine.runRenderLoop(() => {
+      scene.render();
+    });
 
-    animate();
+    window.addEventListener("resize", () => {
+      engine.resize();
+    });
   </script>
 </body>
 </html>
