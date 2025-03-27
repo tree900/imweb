@@ -1,21 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>BEIPINK UNIVERS Sphere</title>
   <style>
-    body {
-      margin: 0;
-      background-color: #000;
-      overflow: hidden;
-    }
+    body { margin: 0; background: black; overflow: hidden; }
   </style>
 </head>
 <body>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three-spritetext@1.11.2/build/spritetext.min.js"></script>
+  <!-- three.js를 로컬에서 불러오기 -->
+  <script type="module">
+    import * as THREE from './three/three.module.js';
+    import SpriteText from 'https://cdn.jsdelivr.net/npm/three-spritetext@1.11.2/build/spritetext.module.js';
 
-  <script>
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.z = 5;
@@ -57,6 +54,7 @@
       scene.rotation.x += 0.001;
       renderer.render(scene, camera);
     }
+
     animate();
   </script>
 </body>
