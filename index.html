@@ -6,19 +6,16 @@
   <style>
     body {
       margin: 0;
-      background-color: #000; /* 어두운 배경 */
+      background-color: #000;
       overflow: hidden;
-    }
-    canvas {
-      display: block;
     }
   </style>
 </head>
 <body>
-  <script type="module">
-    import * as THREE from 'https://cdn.skypack.dev/three@0.154.0';
-    import SpriteText from 'https://cdn.skypack.dev/three-spritetext';
+  <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three-spritetext@1.11.2/build/spritetext.min.js"></script>
 
+  <script>
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.z = 5;
@@ -27,11 +24,9 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Lighting
     const light = new THREE.AmbientLight(0xffffff, 1);
     scene.add(light);
 
-    // Create multiple texts around a sphere
     const radius = 2;
     const count = 120;
     for (let i = 0; i < count; i++) {
@@ -43,21 +38,19 @@
       const z = radius * Math.cos(phi);
 
       const text = new SpriteText("BEIPINK UNIVERS");
-      text.color = "#ff69b4"; // 핑크색
+      text.color = "#ff69b4";
       text.textHeight = 0.25;
       text.position.set(x, y, z);
-      text.lookAt(0, 0, 0); // 텍스트가 구 중심을 바라보게
+      text.lookAt(0, 0, 0);
       scene.add(text);
     }
 
-    // Resize
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // Animate
     function animate() {
       requestAnimationFrame(animate);
       scene.rotation.y += 0.002;
