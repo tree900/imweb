@@ -67,7 +67,10 @@
       }
 
       animate();
-    });
+    }
+      undefined,
+      err => console.error('❌ Font load error:', err)      
+      );
 
     function animate() {
       requestAnimationFrame(animate);
