@@ -7,6 +7,7 @@
     body { margin: 0; background: black; overflow: hidden; }
     canvas { display: block; }
   </style>
+  <link rel="icon" href="data:,">
 </head>
 <body>
   <script type="module">
@@ -27,53 +28,52 @@
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
 
+    scene.add(new THREE.AmbientLight(0x888888));
     const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(1, 1, 1);
     scene.add(light);
 
-    const ambient = new THREE.AmbientLight(0x888888);
-    scene.add(ambient);
-
     const loader = new FontLoader();
-    loader.load('./fonts/helvetiker_regular.typeface.json', font => {
-      const words = ['BEIPINK', 'UNIVERSE'];
-      const radius = 90;
-      const count = 36;
+    loader.load(
+      './fonts/helvetiker_regular.typeface.json',
+      (font) => {
+        const words = ['BEIPINK', 'UNIVERSE'];
+        const count = 36;
+        const radius = 90;
 
-      for (let i = 0; i < count; i++) {
-        const word = words[i % words.length];
+        for (let i = 0; i < count; i++) {
+          const word = words[i % words.length];
+          const geometry = new TextGeometry(word, {
+            font,
+            size: 6,
+            height: 1.5,
+            curveSegments: 6
+          });
+          const material = new THREE.MeshStandardMaterial({ color: 0xfdf6e3 });
+          const mesh = new THREE.Mesh(geometry, material);
 
-        const geometry = new TextGeometry(word, {
-          font: font,
-          size: 6,
-          height: 1.5,
-          curveSegments: 6
-        });
+          const phi = Math.acos(-1 + (2 * i) / count);
+          const theta = Math.sqrt(count * Math.PI) * phi;
 
-        const material = new THREE.MeshStandardMaterial({ color: 0xfdf6e3 });
-        const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.set(
+            radius * Math.cos(theta) * Math.sin(phi),
+            radius * Math.sin(theta) * Math.sin(phi),
+            radius * Math.cos(phi)
+          );
 
-        const phi = Math.acos(-1 + (2 * i) / count);
-        const theta = Math.sqrt(count * Math.PI) * phi;
+          mesh.lookAt(0, 0, 0);
+          scene.add(mesh);
+        }
 
-        mesh.position.set(
-          radius * Math.cos(theta) * Math.sin(phi),
-          radius * Math.sin(theta) * Math.sin(phi),
-          radius * Math.cos(phi)
-        );
-
-        mesh.lookAt(0, 0, 0);
-        scene.add(mesh);
-      }
-
-      animate();
-    }
+        animate();
+      },
       undefined,
-      err => console.error('❌ Font load error:', err)      
-      );
+      (err) => console.error('❌ Font Load Error:', err)
+    );
 
     function animate() {
       requestAnimationFrame(animate);
+      scene.rotation.y += 0.002;
       controls.update();
       renderer.render(scene, camera);
     }
