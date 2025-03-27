@@ -1,69 +1,70 @@
 <!DOCTYPE html>
-<html lang=\"en\">
+<html lang="en">
 <head>
-    <meta charset=\"UTF-8\">
-    <title>BEIPINK UNIVERSE 3D Sphere</title>
-    <script src=\"https://cdn.jsdelivr.net/npm/three@0.164.0/build/three.min.js\"></script>
-    <script src=\"https://cdn.jsdelivr.net/npm/three@0.164.0/examples/js/loaders/FontLoader.js\"></script>
-    <script src=\"https://cdn.jsdelivr.net/npm/three@0.164.0/examples/js/geometries/TextGeometry.js\"></script>
+  <meta charset="UTF-8">
+  <title>BEIPINK UNIVERS Sphere</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #000; /* 어두운 배경 */
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
 </head>
 <body>
-<script>
+  <script type="module">
+    import * as THREE from 'https://cdn.skypack.dev/three@0.154.0';
+    import SpriteText from 'https://cdn.skypack.dev/three-spritetext';
+
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 5;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
-    directionalLight.position.set(1, 1, 1);
-    scene.add(directionalLight);
+    // Lighting
+    const light = new THREE.AmbientLight(0xffffff, 1);
+    scene.add(light);
 
-    camera.position.z = 50;
+    // Create multiple texts around a sphere
+    const radius = 2;
+    const count = 120;
+    for (let i = 0; i < count; i++) {
+      const phi = Math.acos(-1 + (2 * i) / count);
+      const theta = Math.sqrt(count * Math.PI) * phi;
 
-    const loader = new THREE.FontLoader();
+      const x = radius * Math.cos(theta) * Math.sin(phi);
+      const y = radius * Math.sin(theta) * Math.sin(phi);
+      const z = radius * Math.cos(phi);
 
-    loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', (font) => {
-        const textMaterial = new THREE.MeshStandardMaterial({ color: 0xF8F4E3 });
-        const radius = 20;
-
-        for (let phi = 0; phi <= Math.PI; phi += Math.PI / 6) {
-            for (let theta = 0; theta < 2 * Math.PI; theta += Math.PI / 3) {
-                const textGeo = new THREE.TextGeometry('BEIPINK UNIVERSE', {
-                    font: font,
-                    size: 1.5,
-                    height: 0.5,
-                });
-
-                const textMesh = new THREE.Mesh(textGeo, textMaterial);
-
-                const x = radius * Math.sin(phi) * Math.cos(theta);
-                const y = radius * Math.cos(phi);
-                const z = radius * Math.sin(phi) * Math.sin(theta);
-
-                textMesh.position.set(x, y, z);
-                textMesh.lookAt(0, 0, 0);
-
-                scene.add(textMesh);
-            }
-        }
-
-        animate();
-    });
-
-    function animate() {
-        requestAnimationFrame(animate);
-        scene.rotation.y += 0.005;
-        renderer.render(scene, camera);
+      const text = new SpriteText("BEIPINK UNIVERS");
+      text.color = "#ff69b4"; // 핑크색
+      text.textHeight = 0.25;
+      text.position.set(x, y, z);
+      text.lookAt(0, 0, 0); // 텍스트가 구 중심을 바라보게
+      scene.add(text);
     }
 
+    // Resize
     window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
     });
-</script>
+
+    // Animate
+    function animate() {
+      requestAnimationFrame(animate);
+      scene.rotation.y += 0.002;
+      scene.rotation.x += 0.001;
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
 </body>
 </html>
