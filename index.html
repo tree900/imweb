@@ -6,7 +6,7 @@
   <style>
     body {
       margin: 0;
-      background: #000;
+      background: black;
       overflow: hidden;
     }
     canvas {
@@ -14,11 +14,11 @@
     }
   </style>
 
-  <!-- ✅ 로컬 파일로 동작하도록 Three.js 구성 -->
+  <!-- 로컬 JS 라이브러리 불러오기 -->
   <script src="./libs/three.min.js"></script>
-  <script src="./libs/FontLoader.min.js"></script>
-  <script src="./libs/TextGeometry.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/controls/OrbitControls.js"></script>
+  <script src="./libs/OrbitControls.js"></script>
+  <script src="./libs/FontLoader.js"></script>
+  <script src="./libs/TextGeometry.js"></script>
 </head>
 <body>
   <script>
@@ -30,7 +30,6 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // ✅ OrbitControls 추가
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
@@ -45,29 +44,28 @@
     const loader = new THREE.FontLoader();
     loader.load("./fonts/helvetiker_regular.typeface.json", function (font) {
       const words = ["BEIPINK", "UNIVERSE"];
-      const sphereRadius = 90;
-      const wordCount = 36;
+      const radius = 90;
+      const count = 36;
 
-      for (let i = 0; i < wordCount; i++) {
+      for (let i = 0; i < count; i++) {
         const word = words[i % words.length];
-
-        const textGeometry = new THREE.TextGeometry(word, {
-          font: font,
+        const geo = new THREE.TextGeometry(word, {
+          font,
           size: 6,
           height: 1.5,
           curveSegments: 6,
         });
+        const mat = new THREE.MeshStandardMaterial({ color: 0xfdf6e3 });
+        const mesh = new THREE.Mesh(geo, mat);
 
-        const material = new THREE.MeshStandardMaterial({ color: 0xfdf6e3 });
-        const mesh = new THREE.Mesh(textGeometry, material);
+        const phi = Math.acos(-1 + (2 * i) / count);
+        const theta = Math.sqrt(count * Math.PI) * phi;
 
-        const phi = Math.acos(-1 + (2 * i) / wordCount);
-        const theta = Math.sqrt(wordCount * Math.PI) * phi;
-
-        mesh.position.x = sphereRadius * Math.cos(theta) * Math.sin(phi);
-        mesh.position.y = sphereRadius * Math.sin(theta) * Math.sin(phi);
-        mesh.position.z = sphereRadius * Math.cos(phi);
-
+        mesh.position.set(
+          radius * Math.cos(theta) * Math.sin(phi),
+          radius * Math.sin(theta) * Math.sin(phi),
+          radius * Math.cos(phi)
+        );
         mesh.lookAt(0, 0, 0);
         scene.add(mesh);
       }
