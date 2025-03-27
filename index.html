@@ -10,11 +10,10 @@
 </head>
 <body>
   <script type="module">
-import * as THREE from './three/three.module.js';
-import { OrbitControls } from './jsm/controls/OrbitControls.js';
-import { FontLoader } from './jsm/loaders/FontLoader.js';
-import { TextGeometry } from './jsm/geometries/TextGeometry.js';
-
+    import * as THREE from './three/three.module.js';
+    import { OrbitControls } from './jsm/controls/OrbitControls.js';
+    import { FontLoader } from './jsm/loaders/FontLoader.js';
+    import { TextGeometry } from './jsm/geometries/TextGeometry.js';
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -27,13 +26,11 @@ import { TextGeometry } from './jsm/geometries/TextGeometry.js';
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 1);
     scene.add(ambientLight);
 
-    // Load font and create multiple 3D texts
     const loader = new FontLoader();
-    loader.load('./fonts/helvetiker_regular.typeface.json', function(font) {
+    loader.load('./fonts/helvetiker_regular.typeface.json', function (font) {
       const textMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
 
       const radius = 6;
@@ -70,7 +67,6 @@ import { TextGeometry } from './jsm/geometries/TextGeometry.js';
       }
     });
 
-    // Animate
     function animate() {
       requestAnimationFrame(animate);
       scene.rotation.y += 0.003;
