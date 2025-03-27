@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>3D Text (로컬 빌드 버전)</title>
+  <title>3D Text Globe</title>
   <style>
-    body { margin: 0; overflow: hidden; background: #000; }
+    body { margin: 0; background: black; overflow: hidden; }
     canvas { display: block; }
   </style>
 </head>
@@ -27,22 +27,45 @@
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
 
-    scene.add(new THREE.AmbientLight(0x888888));
     const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(1, 1, 1);
     scene.add(light);
 
+    const ambient = new THREE.AmbientLight(0x888888);
+    scene.add(ambient);
+
     const loader = new FontLoader();
     loader.load('./fonts/helvetiker_regular.typeface.json', font => {
-      const geometry = new TextGeometry('HELLO', {
-        font: font,
-        size: 6,
-        height: 1.5,
-        curveSegments: 6,
-      });
-      const material = new THREE.MeshStandardMaterial({ color: 0xfdf6e3 });
-      const mesh = new THREE.Mesh(geometry, material);
-      scene.add(mesh);
+      const words = ['BEIPINK', 'UNIVERSE'];
+      const radius = 90;
+      const count = 36;
+
+      for (let i = 0; i < count; i++) {
+        const word = words[i % words.length];
+
+        const geometry = new TextGeometry(word, {
+          font: font,
+          size: 6,
+          height: 1.5,
+          curveSegments: 6
+        });
+
+        const material = new THREE.MeshStandardMaterial({ color: 0xfdf6e3 });
+        const mesh = new THREE.Mesh(geometry, material);
+
+        const phi = Math.acos(-1 + (2 * i) / count);
+        const theta = Math.sqrt(count * Math.PI) * phi;
+
+        mesh.position.set(
+          radius * Math.cos(theta) * Math.sin(phi),
+          radius * Math.sin(theta) * Math.sin(phi),
+          radius * Math.cos(phi)
+        );
+
+        mesh.lookAt(0, 0, 0);
+        scene.add(mesh);
+      }
+
       animate();
     });
 
