@@ -1,18 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BEIPINK UNIVERSE</title>
   <style>
     body { margin: 0; overflow: hidden; background: black; }
     canvas { display: block; }
   </style>
 
-  <!-- ✅ 반드시 HEAD에 Three.js를 먼저 로드 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+  <!-- ✅ Importmap for Three.js -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
 </head>
 <body>
-  <!-- ✅ 그 다음에 script.js 로드 -->
-  <script src="script.js"></script>
+  <!-- ✅ 모듈 타입으로 script.js 로드 -->
+  <script type="module" src="script.js"></script>
 </body>
 </html>
