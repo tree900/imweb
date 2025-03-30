@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>핑크 블루 그라데이션 지구</title>
+  <title>고퀄 지구본</title>
   <style>
-    body { margin: 0; overflow: hidden; background: #000; }
+    body { margin: 0; overflow: hidden; background-color: #000; }
     canvas { display: block; }
   </style>
 
@@ -33,57 +33,56 @@
     document.body.appendChild(renderer.domElement);
 
     const loader = new THREE.TextureLoader();
-    const geometry = new THREE.SphereGeometry(1, 128, 128);
+    const geometry = new THREE.SphereGeometry(1, 256, 256); // 고퀄 디테일
 
-    loader.load('https://threejs.org/examples/textures/earth_displacement.jpg', (displacementMap) => {
+    loader.load(
+      'https://tree900.github.io/imweb/src/textures/earth_displacement.jpg',
+      (displacementMap) => {
+        const material = new THREE.ShaderMaterial({
+          uniforms: {
+            displacementMap: { value: displacementMap },
+            displacementScale: { value: 0.25 },
+            colorLand: { value: new THREE.Color('#ffc0cb') },     // 연핑크
+            colorOcean: { value: new THREE.Color('#87cefa') },    // 연블루
+            colorWhite: { value: new THREE.Color('#ffffff') }     // 흰색
+          },
+          vertexShader: `
+            varying vec2 vUv;
+            varying float vDisplacement;
+            uniform sampler2D displacementMap;
+            uniform float displacementScale;
 
-      const material = new THREE.ShaderMaterial({
-        uniforms: {
-          displacementMap: { value: displacementMap },
-          displacementScale: { value: 0.15 },
-          colorLand: { value: new THREE.Color('#ffc0cb') },     // 연핑크
-          colorOcean: { value: new THREE.Color('#87cefa') },    // 연파랑
-          colorWhite: { value: new THREE.Color('#ffffff') }     // 흰색
-        },
-        vertexShader: `
-          varying vec2 vUv;
-          varying float vDisplacement;
-          uniform sampler2D displacementMap;
-          uniform float displacementScale;
-
-          void main() {
-            vUv = uv;
-            vDisplacement = texture2D(displacementMap, uv).r;
-            vec3 newPosition = position + normal * vDisplacement * displacementScale;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
-          }
-        `,
-        fragmentShader: `
-          uniform vec3 colorLand;
-          uniform vec3 colorOcean;
-          uniform vec3 colorWhite;
-          varying float vDisplacement;
-
-          void main() {
-            vec3 finalColor;
-            if (vDisplacement > 0.3) {
-              // 대륙: 핑크 → 흰
-              finalColor = mix(colorLand, colorWhite, (vDisplacement - 0.3) / 0.7);
-            } else {
-              // 바다: 파랑 → 흰
-              finalColor = mix(colorOcean, colorWhite, (0.3 - vDisplacement) / 0.3);
+            void main() {
+              vUv = uv;
+              vDisplacement = texture2D(displacementMap, uv).r;
+              vec3 newPosition = position + normal * vDisplacement * displacementScale;
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
             }
-            gl_FragColor = vec4(finalColor, 0.9);
-          }
-        `,
-        transparent: true
-      });
+          `,
+          fragmentShader: `
+            uniform vec3 colorLand;
+            uniform vec3 colorOcean;
+            uniform vec3 colorWhite;
+            varying float vDisplacement;
 
-      const earth = new THREE.Mesh(geometry, material);
-      scene.add(earth);
-    });
+            void main() {
+              vec3 finalColor;
+              if (vDisplacement > 0.3) {
+                finalColor = mix(colorLand, colorWhite, (vDisplacement - 0.3) / 0.7);
+              } else {
+                finalColor = mix(colorOcean, colorWhite, (0.3 - vDisplacement) / 0.3);
+              }
+              gl_FragColor = vec4(finalColor, 0.95);
+            }
+          `,
+          transparent: true
+        });
 
-    // 조명
+        const earth = new THREE.Mesh(geometry, material);
+        scene.add(earth);
+      }
+    );
+
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
 
@@ -91,13 +90,11 @@
     directionalLight.position.set(5, 3, 5);
     scene.add(directionalLight);
 
-    // 컨트롤
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.4;
+    controls.autoRotateSpeed = 0.3;
 
-    // 애니메이션
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
@@ -106,7 +103,6 @@
 
     animate();
 
-    // 반응형
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
