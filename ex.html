@@ -3,21 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>3D Sphere Text</title>
+  <title>3D Sphere Text - BEIPINK</title>
   <style>
     body { margin: 0; background: transparent; overflow: hidden; }
     canvas { display: block; }
   </style>
+
+  <!-- Import map for Three.js and examples -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/examples/jsm/controls/OrbitControls.js": "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js",
+      "three/examples/jsm/loaders/FontLoader.js": "https://unpkg.com/three@0.160.0/examples/jsm/loaders/FontLoader.js",
+      "three/examples/jsm/geometries/TextGeometry.js": "https://unpkg.com/three@0.160.0/examples/jsm/geometries/TextGeometry.js"
+    }
+  }
+  </script>
 </head>
 <body>
   <div id="sphere-wrapper" style="width: 100vw; height: 100vh;"></div>
 
-  <!-- three.module.js를 상대 경로로 불러옴 -->
-<script type="module">
-  import * as THREE from './build/three.module.js';
-  import { OrbitControls } from './examples/jsm/controls/OrbitControls.js';
-  import { FontLoader } from './examples/jsm/loaders/FontLoader.js';
-  import { TextGeometry } from './examples/jsm/geometries/TextGeometry.js';
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+    import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+    import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 
     const container = document.getElementById('sphere-wrapper');
 
@@ -36,7 +47,7 @@
     scene.add(light);
 
     const loader = new FontLoader();
-    loader.load('./examples/fonts/helvetiker_regular.typeface.json', function (font) {
+    loader.load('https://unpkg.com/three@0.160.0/examples/fonts/helvetiker_regular.typeface.json', function (font) {
       const material = new THREE.MeshStandardMaterial({ color: 0x000000 });
       const radius = 6;
       const count = 80;
