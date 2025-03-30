@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 let scene, camera, renderer, particles, geometry, material;
 let targetPositions = [], currentPositions = [];
 let mouse = new THREE.Vector2(0, 0);
@@ -17,13 +19,11 @@ function init() {
 
   geometry = new THREE.BufferGeometry();
 
-  // Load positions from JSON
   fetch("particles_positions.json")
     .then(res => res.json())
     .then(data => {
       targetPositions = data.map(p => new THREE.Vector3(p[0], p[1], p[2]));
 
-      // 초기 랜덤 위치
       for (let i = 0; i < targetPositions.length; i++) {
         currentPositions.push(new THREE.Vector3(
           (Math.random() - 0.5) * 400,
@@ -40,7 +40,6 @@ function init() {
       scene.add(particles);
     });
 
-  // 마우스 감지
   window.addEventListener('mousemove', (event) => {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -57,8 +56,6 @@ function animate() {
   for (let i = 0; i < currentPositions.length; i++) {
     let cur = currentPositions[i];
     let target = targetPositions[i];
-
-    // 마우스 영향 반영: 가까울수록 더 빨리 텍스트 좌표로 이동
     let distToMouse = cur.distanceTo(new THREE.Vector3(mouse.x * 100, mouse.y * 100, 0));
     let speed = distToMouse < 50 ? 0.1 : 0.02;
 
