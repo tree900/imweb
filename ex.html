@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pink Globe</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pink Gradient Earth</title>
   <style>
-    body { margin: 0; background: transparent; overflow: hidden; }
+    body { margin: 0; overflow: hidden; }
     canvas { display: block; }
   </style>
 
-  <!-- Import Map -->
+  <!-- Import Map 설정 -->
   <script type="importmap">
   {
     "imports": {
@@ -24,62 +24,73 @@
     import * as THREE from 'three';
     import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-    // Scene & Camera
+    // 씬 생성
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 3;
 
-    // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    // 카메라 설정
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 3);
+
+    // 렌더러 설정
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Gradient Sphere Material
-    const geometry = new THREE.SphereGeometry(1, 64, 64);
+    // 텍스처 로더 생성
+    const textureLoader = new THREE.TextureLoader();
 
-    const uniforms = {
-      color1: { value: new THREE.Color('#ffe6f0') }, // 연핑크
-      color2: { value: new THREE.Color('#ffffff') }  // 흰색
-    };
+    // 디스플레이스먼트 맵 로드
+    const displacementMap = textureLoader.load('https://threejs.org/examples/textures/earth_displacement.jpg');
 
-    const material = new THREE.ShaderMaterial({
-      uniforms: uniforms,
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 color1;
-        uniform vec3 color2;
-        varying vec2 vUv;
-        void main() {
-          gl_FragColor = vec4(mix(color1, color2, vUv.y), 1.0);
-        }
-      `,
-      side: THREE.DoubleSide
+    // 지구본 지오메트리 생성
+    const geometry = new THREE.SphereGeometry(1, 128, 128);
+
+    // 버텍스 컬러 적용을 위한 색상 배열 생성
+    const colors = [];
+    const position = geometry.attributes.position;
+    const vertex = new THREE.Vector3();
+
+    for (let i = 0; i < position.count; i++) {
+      vertex.fromBufferAttribute(position, i);
+      const height = displacementMap.image ? displacementMap.image.data[i * 4] / 255 : 0;
+      const color = new THREE.Color().lerpColors(
+        new THREE.Color('#ffe6f0'), // 낮은 지역: 연핑크
+        new THREE.Color('#ffffff'), // 높은 지역: 흰색
+        height
+      );
+      colors.push(color.r, color.g, color.b);
+    }
+
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+    // 머티리얼 생성
+    const material = new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      displacementMap: displacementMap,
+      displacementScale: 0.1,
+      metalness: 0.1,
+      roughness: 0.8,
     });
 
-    const sphere = new THREE.Mesh(geometry, material);
-    scene.add(sphere);
+    // 지구본 메쉬 생성
+    const earth = new THREE.Mesh(geometry, material);
+    scene.add(earth);
 
-    // Light
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    // 조명 추가
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(3, 3, 3);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(5, 3, 5);
     scene.add(directionalLight);
 
-    // Controls
+    // OrbitControls 추가
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.5;
 
-    // Animate
+    // 애니메이션 함수
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
@@ -88,6 +99,7 @@
 
     animate();
 
+    // 창 크기 변경 대응
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
