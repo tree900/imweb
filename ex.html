@@ -1,14 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pink Gradient Earth</title>
+  <title>네온 핑크 지구본</title>
   <style>
-    body { margin: 0; overflow: hidden; }
+    body { margin: 0; overflow: hidden; background-color: #000; }
     canvas { display: block; }
   </style>
-
   <!-- Import Map 설정 -->
   <script type="importmap">
   {
@@ -32,7 +31,7 @@
     camera.position.set(0, 0, 3);
 
     // 렌더러 설정
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
@@ -45,36 +44,54 @@
     // 지구본 지오메트리 생성
     const geometry = new THREE.SphereGeometry(1, 128, 128);
 
-    // 버텍스 컬러 적용을 위한 색상 배열 생성
-    const colors = [];
-    const position = geometry.attributes.position;
-    const vertex = new THREE.Vector3();
+    // 쉐이더 머티리얼 생성
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        displacementMap: { value: displacementMap },
+        displacementScale: { value: 0.1 },
+        color1: { value: new THREE.Color('#ff69b4') }, // 핫핑크
+        color2: { value: new THREE.Color('#ffffff') }  // 흰색
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        varying float vDisplacement;
+        uniform sampler2D displacementMap;
+        uniform float displacementScale;
+        void main() {
+          vUv = uv;
+          vec4 displacementData = texture2D(displacementMap, uv);
+          vDisplacement = displacementData.r;
+          vec3 newPosition = position + normal * vDisplacement * displacementScale;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 color1;
+        uniform vec3 color2;
+        varying vec2 vUv;
+        varying float vDisplacement;
+        void main() {
+          float mixStrength = vDisplacement * 0.5 + 0.5;
+          vec3 mixedColor = mix(color1, color2, mixStrength);
+          gl_FragColor = vec4(mixedColor, 0.7); // 투명도 설정
+        }
+      `,
+      transparent: true
+    });
 
-    for (let i = 0; i < position.count; i++) {
-      vertex.fromBufferAttribute(position, i);
-      const height = displacementMap.image ? displacementMap.image.data[i * 4] / 255 : 0;
-      const color = new THREE.Color().lerpColors(
-        new THREE.Color('#ffe6f0'), // 낮은 지역: 연핑크
-        new THREE.Color('#ffffff'), // 높은 지역: 흰색
-        height
-      );
-      colors.push(color.r, color.g, color.b);
-    }
-
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-
-    // 머티리얼 생성
-    const material = new THREE.MeshStandardMaterial({
-      vertexColors: true,
-      displacementMap: displacementMap,
-      displacementScale: 0.1,
-      metalness: 0.1,
-      roughness: 0.8,
+    // 와이어프레임 머티리얼 생성
+    const wireframeMaterial = new THREE.MeshBasicMaterial({
+      color: '#ff1493', // 딥핑크
+      wireframe: true,
+      transparent: true,
+      opacity: 0.3
     });
 
     // 지구본 메쉬 생성
     const earth = new THREE.Mesh(geometry, material);
+    const wireframe = new THREE.Mesh(geometry, wireframeMaterial);
     scene.add(earth);
+    scene.add(wireframe);
 
     // 조명 추가
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
