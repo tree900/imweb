@@ -49,7 +49,7 @@
       uniforms: {
         displacementMap: { value: displacementMap },
         displacementScale: { value: 0.1 },
-        color1: { value: new THREE.Color('#ff69b4') }, // 핫핑크
+        color1: { value: new THREE.Color('#ff69b4') }, // 핑크색
         color2: { value: new THREE.Color('#ffffff') }  // 흰색
       },
       vertexShader: `
@@ -81,7 +81,7 @@
 
     // 와이어프레임 머티리얼 생성
     const wireframeMaterial = new THREE.MeshBasicMaterial({
-      color: '#ff1493', // 딥핑크
+      color: '#ff69b4', // 핑크색
       wireframe: true,
       transparent: true,
       opacity: 0.3
