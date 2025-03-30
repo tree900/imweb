@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BEIPINK UNIVERSE</title>
+  <title>BEIPINK UNIVERSE - Debug</title>
   <style>
     body { margin: 0; overflow: hidden; background: black; }
     canvas { display: block; }
   </style>
 
-  <!-- ✅ Importmap for Three.js -->
+  <!-- Import map for ESModule Three.js -->
   <script type="importmap">
   {
     "imports": {
@@ -19,9 +19,10 @@
   </script>
 </head>
 <body>
-  <!-- ✅ 모듈 타입으로 직접 Three.js 코드 작성 -->
   <script type="module">
     import * as THREE from 'three';
+
+    console.log("🚀 Three.js 시작됨");
 
     let scene, camera, renderer, particles, geometry, material;
     let targetPositions = [], currentPositions = [];
@@ -42,9 +43,14 @@
 
       geometry = new THREE.BufferGeometry();
 
+      // ✅ JSON 로딩 시도
       fetch("particles_positions.json")
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error("⚠️ JSON 파일 로드 실패! 경로 확인 필요");
+          return res.json();
+        })
         .then(data => {
+          console.log("📦 JSON 로드 완료. 포인트 수:", data.length);
           targetPositions = data.map(p => new THREE.Vector3(p[0], p[1], p[2]));
 
           for (let i = 0; i < targetPositions.length; i++) {
@@ -58,9 +64,14 @@
           const positions = new Float32Array(currentPositions.length * 3);
           geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-          material = new THREE.PointsMaterial({ color: 0xff69b4, size: 1.5 });
+          // ✅ 입자 색상 흰색
+          material = new THREE.PointsMaterial({ color: 0xffffff, size: 1.5 });
+
           particles = new THREE.Points(geometry, material);
           scene.add(particles);
+        })
+        .catch(err => {
+          console.error("❌ JSON 로딩 중 에러:", err);
         });
 
       window.addEventListener('mousemove', (event) => {
@@ -77,10 +88,11 @@
       const positions = particles.geometry.attributes.position.array;
 
       for (let i = 0; i < currentPositions.length; i++) {
-        let cur = currentPositions[i];
-        let target = targetPositions[i];
-        let distToMouse = cur.distanceTo(new THREE.Vector3(mouse.x * 100, mouse.y * 100, 0));
-        let speed = distToMouse < 50 ? 0.1 : 0.02;
+        const cur = currentPositions[i];
+        const target = targetPositions[i];
+
+        const distToMouse = cur.distanceTo(new THREE.Vector3(mouse.x * 100, mouse.y * 100, 0));
+        const speed = distToMouse < 50 ? 0.1 : 0.02;
 
         cur.lerp(target, speed);
 
@@ -92,6 +104,12 @@
       particles.geometry.attributes.position.needsUpdate = true;
       renderer.render(scene, camera);
     }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
   </script>
 </body>
 </html>
