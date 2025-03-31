@@ -5,7 +5,8 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.z = 3; // 📌 중심에서 보기 좋게 조정
+// 📌 일단 보기 쉽게 조금 뒤에서 시작
+camera.position.z = 5;
 
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('beipinkCanvas'),
@@ -24,7 +25,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = false;
 controls.minDistance = 2;
-controls.maxDistance = 6;
+controls.maxDistance = 10;
 
 const textureLoader = new THREE.TextureLoader();
 const particleTexture = textureLoader.load(
@@ -68,16 +69,17 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
   });
 
   const mergedGeometry = mergeGeometries(geometries, false);
-  mergedGeometry.center();          // 📌 메시 중심 이동
-  camera.lookAt(0, 0, 0);           // 📌 중앙 바라보게 조정
+  mergedGeometry.center();
+
+  // 📌 강제로 시야 중앙 조정
+  camera.lookAt(0, 0, 0);
 
   const count = mergedGeometry.attributes.position.count;
-  const particleGeo = new THREE.PlaneGeometry(0.03, 0.03); // 📌 보기 좋게 조금 크게
+  const particleGeo = new THREE.PlaneGeometry(0.08, 0.08); // ← 큼직하게 키움
   const material = new THREE.MeshBasicMaterial({
     map: particleTexture,
     transparent: true,
     depthWrite: false,
-    blending: THREE.AdditiveBlending,
     vertexColors: true,
     opacity: 1.0,
     side: THREE.DoubleSide
@@ -93,6 +95,10 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
       mergedGeometry.attributes.position.getZ(i)
     );
     originalPositions.push(pos);
+
+    if (i === 0) {
+      console.log('📌 First particle position:', pos); // 디버깅용 출력!
+    }
 
     dummy.position.copy(pos);
     dummy.updateMatrix();
