@@ -17,15 +17,17 @@
   </main>
 
   <!-- import map -->
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "./build/three.module.js",
-        "three/examples/jsm/controls/OrbitControls": "./examples/jsm/controls/OrbitControls.js",
-        "three/examples/jsm/loaders/GLTFLoader": "./examples/jsm/loaders/GLTFLoader.js"
-      }
-    }
-  </script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "./build/three.module.js",
+    "three/examples/jsm/controls/OrbitControls": "./examples/jsm/controls/OrbitControls.js",
+    "three/examples/jsm/loaders/GLTFLoader": "./examples/jsm/loaders/GLTFLoader.js",
+    "three/examples/jsm/utils/BufferGeometryUtils.js": "./examples/jsm/utils/BufferGeometryUtils.js"
+  }
+}
+</script>
+
 
   <!-- 입자 애니메이션 JS -->
 <script type="module" src="beipink_particles.js?v=1006" defer></script>
