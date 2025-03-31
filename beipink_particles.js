@@ -28,6 +28,14 @@ controls.maxDistance = 6;
 
 const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
 
+particleTexture.onLoad = () => {
+  console.log('✨ neo_particle.png loaded!');
+};
+
+particleTexture.onError = (err) => {
+  console.error('❌ Failed to load neo_particle.png', err);
+};
+
 let instanced;
 let originalPositions = [];
 let directions = [];
