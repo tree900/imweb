@@ -173,5 +173,6 @@ window.addEventListener('resize', () => {
 
 function setCameraPosition() {
   const aspect = window.innerWidth / window.innerHeight;
-  camera.position.z = aspect < 1 ? 6 : 5;
+  camera.position.set(0, 0, 2);
+
 }
