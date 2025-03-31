@@ -26,12 +26,12 @@ controls.enablePan = false;
 controls.minDistance = 4;
 controls.maxDistance = 6;
 
-// 텍스처
+// 입자 텍스처
 const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
 
+// 변수 초기화
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-
 let instanced;
 let originalPositions = [];
 let directions = [];
@@ -39,6 +39,7 @@ let delays = [];
 let animationStarted = false;
 let startTime = 0;
 
+// GLTF 불러오기
 const loader = new GLTFLoader();
 loader.load('beipink_text_dusty.glb', (gltf) => {
   const mesh = gltf.scene.children[0];
@@ -63,21 +64,24 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
     const y = geometry.attributes.position.getY(i);
     const z = geometry.attributes.position.getZ(i);
     originalPositions.push(new THREE.Vector3(x, y, z));
+
     dummy.position.set(x, y, z);
     dummy.updateMatrix();
     instanced.setMatrixAt(i, dummy.matrix);
+
     directions.push(new THREE.Vector3(
       (Math.random() - 0.5) * 2,
       (Math.random() - 0.5) * 2,
       (Math.random() - 0.5) * 2
     ));
+
     delays.push(0);
   }
 
   scene.add(instanced);
 });
 
-// 클릭 → 해체
+// 클릭 이벤트 → 해체 트리거
 window.addEventListener('click', (event) => {
   if (!instanced || animationStarted) return;
 
@@ -89,13 +93,14 @@ window.addEventListener('click', (event) => {
 
   for (let i = 0; i < originalPositions.length; i++) {
     const distance = originalPositions[i].distanceTo(clickPoint);
-    delays[i] = distance / 2.5;
+    delays[i] = distance / 2.5; // 퍼지는 속도 조정
   }
 
   startTime = performance.now() / 1000;
   animationStarted = true;
 });
 
+// 애니메이션 루프
 const clock = new THREE.Clock();
 const dummy = new THREE.Object3D();
 
