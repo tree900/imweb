@@ -1,4 +1,4 @@
-// beipink_particles.js
+
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -6,8 +6,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.set(0, 0, 5); // 💡 중앙 고정 시야
-camera.lookAt(0, 0, 0);
+camera.position.z = 3;
 
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('beipinkCanvas'),
@@ -17,7 +16,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setClearColor(0x000000, 0);
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
 dirLight.position.set(5, 5, 5);
 scene.add(dirLight);
@@ -25,12 +24,12 @@ scene.add(dirLight);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = false;
-controls.minDistance = 4;
-controls.maxDistance = 6;
+controls.minDistance = 1.5;
+controls.maxDistance = 10;
 
-const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
-particleTexture.onLoad = () => console.log('✨ neo_particle.png loaded!');
-particleTexture.onError = () => console.error('❌ Failed to load neo_particle.png');
+const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png', () => {
+  console.log("✨ neo_particle.png loaded!");
+});
 
 let instanced;
 let originalPositions = [];
@@ -39,15 +38,9 @@ let delays = [];
 let animationStarted = false;
 let startTime = 0;
 
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-
 const loader = new GLTFLoader();
 loader.load('beipink_text_dusty.glb', (gltf) => {
   console.log('GLTF loaded!');
-
-  gltf.scene.updateMatrixWorld(true);
-
   const meshes = [];
   gltf.scene.traverse(child => {
     if (child.isMesh) {
@@ -57,7 +50,7 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
   });
 
   if (meshes.length === 0) {
-    console.error('No mesh found in GLB!');
+    console.error('❌ No mesh found in GLB!');
     return;
   }
 
@@ -68,23 +61,18 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
   });
 
   const mergedGeometry = mergeGeometries(geometries, false);
-  mergedGeometry.center(); // 💡 메시 중심 정렬
-
-  // 💡 디버깅
-  const x = mergedGeometry.attributes.position.getX(0);
-  const y = mergedGeometry.attributes.position.getY(0);
-  const z = mergedGeometry.attributes.position.getZ(0);
-  console.log('After center - First vertex:', x, y, z);
+  console.log("After center - First vertex:", mergedGeometry.attributes.position.getX(0), mergedGeometry.attributes.position.getY(0), mergedGeometry.attributes.position.getZ(0));
+  mergedGeometry.center();
 
   const count = mergedGeometry.attributes.position.count;
-  const particleGeo = new THREE.PlaneGeometry(0.01, 0.01); // 💡 크기 약간 키움
+  const particleGeo = new THREE.PlaneGeometry(0.03, 0.03);
   const material = new THREE.MeshBasicMaterial({
     map: particleTexture,
     transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
+    depthWrite: true,
+    blending: THREE.NormalBlending,
     vertexColors: true,
-    opacity: 0.9,
+    opacity: 1.0,
     side: THREE.DoubleSide
   });
 
@@ -108,23 +96,26 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
       (Math.random() - 0.5) * 2,
       (Math.random() - 0.5) * 2
     ));
-
     delays.push(0);
     instanced.setColorAt(i, new THREE.Color(0.92, 0.85, 0.87));
   }
 
   scene.add(instanced);
+  const boxHelper = new THREE.BoxHelper(instanced, 0xffff00);
+  scene.add(boxHelper);
+
+  camera.lookAt(0, 0, 0);
 });
 
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
 window.addEventListener('click', (event) => {
   if (!instanced || animationStarted) return;
-
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
   raycaster.setFromCamera(mouse, camera);
-  const clickPoint = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(5));
 
+  const clickPoint = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(5));
   for (let i = 0; i < originalPositions.length; i++) {
     const distance = originalPositions[i].distanceTo(clickPoint);
     delays[i] = distance / 3.5;
@@ -135,21 +126,17 @@ window.addEventListener('click', (event) => {
 });
 
 const dummy = new THREE.Object3D();
-
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
-
   const now = performance.now() / 1000;
   const elapsed = now - startTime;
 
   if (instanced) {
     let allDone = true;
-
     for (let i = 0; i < originalPositions.length; i++) {
       const delay = delays[i];
       const progress = animationStarted ? Math.max(0, Math.min(1, (elapsed - delay) / 3)) : 0;
-
       const move = directions[i].clone().multiplyScalar(progress);
       const pos = originalPositions[i].clone().add(move);
       const scale = 1 - progress;
@@ -159,18 +146,13 @@ function animate() {
       dummy.updateMatrix();
       instanced.setMatrixAt(i, dummy.matrix);
 
-      const color1 = new THREE.Color(0.92, 0.85, 0.87); // 핑크
-      const color2 = new THREE.Color(0.7, 0.8, 1.0);    // 연블루
-      const color3 = new THREE.Color(0.8, 1.0, 0.9);    // 민트
-      const color = color1.clone().lerp(color2, progress).lerp(color3, progress * 0.5);
+      const color = new THREE.Color(0.92 - 0.4 * progress, 0.86 - 0.4 * progress, 0.87 - 0.3 * progress);
       instanced.setColorAt(i, color);
-
       if (progress < 1) allDone = false;
     }
 
     instanced.instanceMatrix.needsUpdate = true;
     instanced.instanceColor.needsUpdate = true;
-
     if (allDone && animationStarted) {
       document.body.classList.add('animation-complete');
       animationStarted = false;
@@ -179,7 +161,6 @@ function animate() {
 
   renderer.render(scene, camera);
 }
-
 animate();
 
 window.addEventListener('resize', () => {
