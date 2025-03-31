@@ -13,7 +13,7 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setClearColor(0x000000, 0); // 투명 배경
+renderer.setClearColor(0x000000, 0);
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
@@ -26,15 +26,13 @@ controls.enablePan = false;
 controls.minDistance = 4;
 controls.maxDistance = 6;
 
-const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
-
-particleTexture.onLoad = () => {
-  console.log('✨ neo_particle.png loaded!');
-};
-
-particleTexture.onError = (err) => {
-  console.error('❌ Failed to load neo_particle.png', err);
-};
+// 🧪 텍스처 로딩 테스트 포함
+const textureLoader = new THREE.TextureLoader();
+const particleTexture = textureLoader.load('./examples/textures/neo_particle.png',
+  () => console.log('✨ neo_particle.png loaded!'),
+  undefined,
+  (err) => console.error('❌ Failed to load neo_particle.png', err)
+);
 
 let instanced;
 let originalPositions = [];
@@ -63,7 +61,6 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
     return;
   }
 
-  // ⚠️ 반드시 월드 변환 적용
   const geometries = meshes.map(mesh => {
     const geo = mesh.geometry.clone();
     geo.applyMatrix4(mesh.matrixWorld);
@@ -157,9 +154,9 @@ function animate() {
       dummy.updateMatrix();
       instanced.setMatrixAt(i, dummy.matrix);
 
-      const color1 = new THREE.Color(0.92, 0.85, 0.87); // 핑크
-      const color2 = new THREE.Color(0.7, 0.8, 1.0);    // 연블루
-      const color3 = new THREE.Color(0.8, 1.0, 0.9);    // 민트
+      const color1 = new THREE.Color(0.92, 0.85, 0.87);
+      const color2 = new THREE.Color(0.7, 0.8, 1.0);
+      const color3 = new THREE.Color(0.8, 1.0, 0.9);
       const color = color1.clone().lerp(color2, progress).lerp(color3, progress * 0.5);
       instanced.setColorAt(i, color);
 
