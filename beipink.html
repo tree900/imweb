@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>BEIPINK UNIVERSE</title>
-  <link rel="stylesheet" href="bpstyle.css?v=1002" />
+  <link rel="stylesheet" href="bpstyle.css" />
 </head>
 <body>
   <div id="container">
@@ -16,18 +16,18 @@
     <p>This is your content after the logo animation ends.</p>
   </main>
 
-  <!-- ⭐ importmap 설정 -->
+  <!-- import map -->
   <script type="importmap">
-  {
-    "imports": {
-      "three": "./build/three.module.js",
-      "three/examples/jsm/controls/OrbitControls": "./examples/jsm/controls/OrbitControls.js",
-      "three/examples/jsm/loaders/GLTFLoader": "./examples/jsm/loaders/GLTFLoader.js"
+    {
+      "imports": {
+        "three": "./build/three.module.js",
+        "three/examples/jsm/controls/OrbitControls": "./examples/jsm/controls/OrbitControls.js",
+        "three/examples/jsm/loaders/GLTFLoader": "./examples/jsm/loaders/GLTFLoader.js"
+      }
     }
-  }
   </script>
 
-  <!-- JS: 입자 해체 연출 -->
-  <script type="module" src="beipink_particles.js?v=1002" defer></script>
+  <!-- 입자 애니메이션 JS -->
+  <script type="module" src="beipink_particles.js"></script>
 </body>
 </html>
