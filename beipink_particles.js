@@ -1,65 +1,57 @@
-// beipink_particles.js
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { GLTFLoader } from './examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from './examples/jsm/controls/OrbitControls.js';
+import { mergeGeometries } from './examples/jsm/utils/BufferGeometryUtils.js';
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.set(0, 0, 5); // 💡 중앙 고정 시야
-camera.lookAt(0, 0, 0);
 
+// ✅ 흰색 배경
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('beipinkCanvas'),
-  alpha: true
+  alpha: false
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setClearColor(0x000000, 0);
+renderer.setClearColor(0xffffff, 1);
 
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 0, 5);
+camera.lookAt(0, 0, 0);
+scene.add(camera);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.enablePan = false;
+controls.minDistance = 3;
+controls.maxDistance = 8;
+
+// ✅ 조명 및 그림자 (약하게)
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
 dirLight.position.set(5, 5, 5);
 scene.add(dirLight);
 
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.enablePan = false;
-controls.minDistance = 4;
-controls.maxDistance = 6;
-
+// ✅ 텍스처 (png 입자)
 const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
-particleTexture.onLoad = () => console.log('✨ neo_particle.png loaded!');
-particleTexture.onError = () => console.error('❌ Failed to load neo_particle.png');
+particleTexture.encoding = THREE.sRGBEncoding;
 
-let instanced;
-let originalPositions = [];
-let directions = [];
-let delays = [];
-let animationStarted = false;
-let startTime = 0;
+let instanced, originalPositions = [], directions = [], delays = [];
+let animationStarted = false, startTime = 0;
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
+// ✅ GLTF 로딩 및 입자 생성
 const loader = new GLTFLoader();
 loader.load('beipink_text_dusty.glb', (gltf) => {
   console.log('GLTF loaded!');
-
-  gltf.scene.updateMatrixWorld(true);
-
   const meshes = [];
+
   gltf.scene.traverse(child => {
     if (child.isMesh) {
-      console.log('FOUND MESH:', child.name);
       meshes.push(child);
     }
   });
-
-  if (meshes.length === 0) {
-    console.error('No mesh found in GLB!');
-    return;
-  }
 
   const geometries = meshes.map(mesh => {
     const geo = mesh.geometry.clone();
@@ -68,23 +60,15 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
   });
 
   const mergedGeometry = mergeGeometries(geometries, false);
-  mergedGeometry.center(); // 💡 메시 중심 정렬
-
-  // 💡 디버깅
-  const x = mergedGeometry.attributes.position.getX(0);
-  const y = mergedGeometry.attributes.position.getY(0);
-  const z = mergedGeometry.attributes.position.getZ(0);
-  console.log('After center - First vertex:', x, y, z);
+  mergedGeometry.center();
 
   const count = mergedGeometry.attributes.position.count;
-  const particleGeo = new THREE.PlaneGeometry(0.01, 0.01); // 💡 크기 약간 키움
+  const particleGeo = new THREE.PlaneGeometry(0.01, 0.01);
   const material = new THREE.MeshBasicMaterial({
     map: particleTexture,
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
-    vertexColors: true,
-    opacity: 0.9,
     side: THREE.DoubleSide
   });
 
@@ -100,6 +84,7 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
     originalPositions.push(pos);
 
     dummy.position.copy(pos);
+    dummy.lookAt(camera.position);  // ✅ 카메라 바라보게
     dummy.updateMatrix();
     instanced.setMatrixAt(i, dummy.matrix);
 
@@ -109,14 +94,15 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
       (Math.random() - 0.5) * 2
     ));
 
-    delays.push(0);
-    instanced.setColorAt(i, new THREE.Color(0.92, 0.85, 0.87));
+    delays.push(0); // 클릭 지점에 따라 갱신됨
   }
 
   scene.add(instanced);
+  camera.lookAt(0, 0, 0);
 });
 
-window.addEventListener('click', (event) => {
+// ✅ 클릭 이벤트로 입자 날아감 시작
+window.addEventListener('mousedown', (event) => {
   if (!instanced || animationStarted) return;
 
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -127,7 +113,7 @@ window.addEventListener('click', (event) => {
 
   for (let i = 0; i < originalPositions.length; i++) {
     const distance = originalPositions[i].distanceTo(clickPoint);
-    delays[i] = distance / 3.5;
+    delays[i] = distance / 3.5;  // 거리 기반으로 퍼짐 시간 분산
   }
 
   startTime = performance.now() / 1000;
@@ -143,38 +129,28 @@ function animate() {
   const now = performance.now() / 1000;
   const elapsed = now - startTime;
 
-  if (instanced) {
-    let allDone = true;
-
+  if (instanced && animationStarted) {
     for (let i = 0; i < originalPositions.length; i++) {
       const delay = delays[i];
-      const progress = animationStarted ? Math.max(0, Math.min(1, (elapsed - delay) / 3)) : 0;
-
+      const progress = Math.max(0, Math.min(1, (elapsed - delay) / 3.5));
       const move = directions[i].clone().multiplyScalar(progress);
       const pos = originalPositions[i].clone().add(move);
-      const scale = 1 - progress;
 
       dummy.position.copy(pos);
-      dummy.scale.setScalar(scale > 0 ? scale : 0);
+      dummy.lookAt(camera.position);
+      dummy.scale.setScalar(1 - progress);
       dummy.updateMatrix();
       instanced.setMatrixAt(i, dummy.matrix);
 
-      const color1 = new THREE.Color(0.92, 0.85, 0.87); // 핑크
-      const color2 = new THREE.Color(0.7, 0.8, 1.0);    // 연블루
-      const color3 = new THREE.Color(0.8, 1.0, 0.9);    // 민트
-      const color = color1.clone().lerp(color2, progress).lerp(color3, progress * 0.5);
+      // ✅ 색상 그라데이션 (핑크 → 베이지)
+      const color1 = new THREE.Color(0xf2cfd3);  // 연핑크
+      const color2 = new THREE.Color(0xf4e4d5);  // 베이지
+      const color = color1.clone().lerp(color2, progress);
       instanced.setColorAt(i, color);
-
-      if (progress < 1) allDone = false;
     }
 
     instanced.instanceMatrix.needsUpdate = true;
     instanced.instanceColor.needsUpdate = true;
-
-    if (allDone && animationStarted) {
-      document.body.classList.add('animation-complete');
-      animationStarted = false;
-    }
   }
 
   renderer.render(scene, camera);
