@@ -2,9 +2,13 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
-// === Scene, Camera, Renderer ===
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+const camera = new THREE.PerspectiveCamera(
+  45,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  100
+);
 setCameraPosition();
 
 const renderer = new THREE.WebGLRenderer({
@@ -14,23 +18,19 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 
-// === Lighting ===
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
 dirLight.position.set(5, 5, 5);
 scene.add(dirLight);
 
-// === Orbit Controls ===
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = false;
 controls.minDistance = 4;
 controls.maxDistance = 6;
 
-// === Load Particle Texture ===
 const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
 
-// === Global Variables ===
 let instanced;
 let originalPositions = [];
 let directions = [];
@@ -41,10 +41,14 @@ let startTime = 0;
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
-// === Load GLTF Logo ===
 const loader = new GLTFLoader();
 loader.load('beipink_text_dusty.glb', (gltf) => {
   const mesh = gltf.scene.children[0];
+  if (!mesh) {
+    console.error('GLB 파일에 메시가 없음');
+    return;
+  }
+
   const geometry = mesh.geometry;
   const count = geometry.attributes.position.count;
 
@@ -82,15 +86,13 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
 
     delays.push(0);
 
-    // 초기 색상 (연한 핑크)
-    const initialColor = new THREE.Color(0.92, 0.85, 0.87);
-    instanced.setColorAt(i, initialColor);
+    const color = new THREE.Color(0.92, 0.85, 0.87); // 초기 색상
+    instanced.setColorAt(i, color);
   }
 
   scene.add(instanced);
 });
 
-// === Click to Trigger Dissolve ===
 window.addEventListener('click', (event) => {
   if (!instanced || animationStarted) return;
 
@@ -102,14 +104,13 @@ window.addEventListener('click', (event) => {
 
   for (let i = 0; i < originalPositions.length; i++) {
     const distance = originalPositions[i].distanceTo(clickPoint);
-    delays[i] = distance / 3.5; // 점차 확산
+    delays[i] = distance / 3.5;
   }
 
   startTime = performance.now() / 1000;
   animationStarted = true;
 });
 
-// === Animate Function ===
 const dummy = new THREE.Object3D();
 
 function animate() {
@@ -135,11 +136,11 @@ function animate() {
       dummy.updateMatrix();
       instanced.setMatrixAt(i, dummy.matrix);
 
-      // === Color Gradient Animation ===
       const color = new THREE.Color();
-      color.r = 0.92 - 0.3 * progress; // from (235, 219, 221)
-      color.g = 0.85 - 0.3 * progress; // to (210, 148, 149)
-      color.b = 0.87 - 0.3 * progress; // blend to slightly purple-pink
+      color.r = 0.92 - 0.4 * progress;
+      color.g = 0.86 - 0.4 * progress;
+      color.b = 0.87 - 0.3 * progress;
+
       instanced.setColorAt(i, color);
 
       if (progress < 1) allDone = false;
@@ -159,7 +160,6 @@ function animate() {
 
 animate();
 
-// === Resize Responsive ===
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   setCameraPosition();
@@ -167,7 +167,6 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// === Responsive Camera Zoom ===
 function setCameraPosition() {
   const aspect = window.innerWidth / window.innerHeight;
   camera.position.z = aspect < 1 ? 6 : 5;
