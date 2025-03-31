@@ -4,41 +4,38 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.z = 5;
 
+// 흰색 배경
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('beipinkCanvas'),
-  alpha: true
+  alpha: false
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setClearColor(0x000000, 1); // 검정 배경
+renderer.setClearColor(0xffffff, 1); // ✅ 흰색 배경
+
+const camera = new THREE.PerspectiveCamera(
+  45,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  100
+);
+scene.add(camera);
+
+camera.position.set(0, 0, 5);
+camera.lookAt(0, 0, 0);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.enablePan = false;
-controls.minDistance = 2;
-controls.maxDistance = 10;
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
-dirLight.position.set(3, 3, 5);
+scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+dirLight.position.set(5, 5, 5);
 scene.add(dirLight);
 
-// 노란색 디버그 라인 (X, Y, Z 기준 축)
-const axesHelper = new THREE.AxesHelper(5);
+// 좌표축 표시
+const axesHelper = new THREE.AxesHelper(2);
 scene.add(axesHelper);
-
-// 텍스처 로드
-const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
-particleTexture.onLoad = () => console.log('✨ neo_particle.png loaded!');
-particleTexture.onError = err => console.error('❌ Failed to load texture:', err);
-
-// 파티클 세팅
-let instanced;
-let originalPositions = [];
-let dummy = new THREE.Object3D();
 
 const loader = new GLTFLoader();
 loader.load('beipink_text_dusty.glb', (gltf) => {
@@ -53,66 +50,61 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
   });
 
   if (meshes.length === 0) {
-    console.error('❌ No mesh found in GLB!');
+    console.error('❌ No mesh found in GLTF!');
     return;
   }
 
   const geometries = meshes.map(mesh => {
     const geo = mesh.geometry.clone();
-    geo.applyMatrix4(mesh.matrixWorld); // 월드 변환 적용
+    geo.applyMatrix4(mesh.matrixWorld);
     return geo;
   });
 
   const mergedGeometry = mergeGeometries(geometries, false);
-  mergedGeometry.center(); // 중심 정렬
-  console.log("After center - First vertex:", 
-    mergedGeometry.attributes.position.getX(0), 
-    mergedGeometry.attributes.position.getY(0), 
-    mergedGeometry.attributes.position.getZ(0)
-  );
+  mergedGeometry.center(); // ✅ 센터링
+  scene.add(new THREE.BoxHelper(new THREE.Mesh(mergedGeometry), 0xff00ff));
 
-  // 파티클 생성
-  const count = mergedGeometry.attributes.position.count;
-  const particleGeo = new THREE.PlaneGeometry(0.015, 0.015); // 디버깅용 크게
-  const material = new THREE.MeshBasicMaterial({
-    map: particleTexture,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    vertexColors: true,
-    opacity: 1.0,
+  // 디버깅 좌표 출력
+  const posAttr = mergedGeometry.attributes.position;
+  if (posAttr.count > 0) {
+    const firstPos = new THREE.Vector3(
+      posAttr.getX(0),
+      posAttr.getY(0),
+      posAttr.getZ(0)
+    );
+    console.log("After center - First vertex:", firstPos);
+  }
+
+  // 입자 생성
+  const particleGeo = new THREE.PlaneGeometry(0.01, 0.01);
+  const particleMat = new THREE.MeshBasicMaterial({
+    color: 0x000000, // ✅ 검정색 입자
     side: THREE.DoubleSide
   });
 
-  instanced = new THREE.InstancedMesh(particleGeo, material, count);
-  for (let i = 0; i < count; i++) {
-    const pos = new THREE.Vector3(
-      mergedGeometry.attributes.position.getX(i),
-      mergedGeometry.attributes.position.getY(i),
-      mergedGeometry.attributes.position.getZ(i)
-    );
-    originalPositions.push(pos);
+  const count = mergedGeometry.attributes.position.count;
+  const instanced = new THREE.InstancedMesh(particleGeo, particleMat, count);
+  const dummy = new THREE.Object3D();
 
-    dummy.position.copy(pos);
+  for (let i = 0; i < count; i++) {
+    dummy.position.set(
+      posAttr.getX(i),
+      posAttr.getY(i),
+      posAttr.getZ(i)
+    );
     dummy.updateMatrix();
     instanced.setMatrixAt(i, dummy.matrix);
-    instanced.setColorAt(i, new THREE.Color(1, 1, 1)); // 흰색
   }
 
   scene.add(instanced);
-  camera.lookAt(0, 0, 0);
 });
 
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
-
-  if (instanced) {
-    instanced.instanceMatrix.needsUpdate = true;
-  }
-
   renderer.render(scene, camera);
 }
+
 animate();
 
 window.addEventListener('resize', () => {
