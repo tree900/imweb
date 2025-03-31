@@ -61,7 +61,7 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
     m.geometry.applyMatrix4(m.matrixWorld);
     return m.geometry;
   });
-  const mergedGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries, false);
+  const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(geometries, false);
   mergedGeometry.center();
 
   const count = mergedGeometry.attributes.position.count;
