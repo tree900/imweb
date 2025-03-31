@@ -5,7 +5,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-setCameraPosition();
+camera.position.z = 3; // 📌 중심에서 보기 좋게 조정
 
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('beipinkCanvas'),
@@ -23,12 +23,12 @@ scene.add(dirLight);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = false;
-controls.minDistance = 4;
+controls.minDistance = 2;
 controls.maxDistance = 6;
 
-// 🧪 텍스처 로딩 테스트 포함
 const textureLoader = new THREE.TextureLoader();
-const particleTexture = textureLoader.load('./examples/textures/neo_particle.png',
+const particleTexture = textureLoader.load(
+  './examples/textures/neo_particle.png',
   () => console.log('✨ neo_particle.png loaded!'),
   undefined,
   (err) => console.error('❌ Failed to load neo_particle.png', err)
@@ -68,17 +68,18 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
   });
 
   const mergedGeometry = mergeGeometries(geometries, false);
-  mergedGeometry.center();
+  mergedGeometry.center();          // 📌 메시 중심 이동
+  camera.lookAt(0, 0, 0);           // 📌 중앙 바라보게 조정
 
   const count = mergedGeometry.attributes.position.count;
-  const particleGeo = new THREE.PlaneGeometry(0.008, 0.008);
+  const particleGeo = new THREE.PlaneGeometry(0.03, 0.03); // 📌 보기 좋게 조금 크게
   const material = new THREE.MeshBasicMaterial({
     map: particleTexture,
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     vertexColors: true,
-    opacity: 0.9,
+    opacity: 1.0,
     side: THREE.DoubleSide
   });
 
@@ -108,7 +109,6 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
   }
 
   scene.add(instanced);
-  camera.lookAt(0, 0, 0);
 });
 
 window.addEventListener('click', (event) => {
@@ -179,12 +179,6 @@ animate();
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
-  setCameraPosition();
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
-
-function setCameraPosition() {
-  const aspect = window.innerWidth / window.innerHeight;
-  camera.position.z = aspect < 1 ? 6 : 5;
-}
