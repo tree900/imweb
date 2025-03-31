@@ -1,3 +1,4 @@
+// beipink_particles.js
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -5,7 +6,8 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.z = 5;
+camera.position.set(0, 0, 5); // 💡 중앙 고정 시야
+camera.lookAt(0, 0, 0);
 
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('beipinkCanvas'),
@@ -13,7 +15,7 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setClearColor(0x000000, 0); // 배경 투명
+renderer.setClearColor(0x000000, 0);
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
@@ -44,7 +46,6 @@ const loader = new GLTFLoader();
 loader.load('beipink_text_dusty.glb', (gltf) => {
   console.log('GLTF loaded!');
 
-  // 💡 반드시 먼저 호출!
   gltf.scene.updateMatrixWorld(true);
 
   const meshes = [];
@@ -67,19 +68,16 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
   });
 
   const mergedGeometry = mergeGeometries(geometries, false);
+  mergedGeometry.center(); // 💡 메시 중심 정렬
 
-  // 📌 중앙 정렬 적용
-  mergedGeometry.center();
-
-  // 디버깅용
-  console.log('After center - First vertex:',
-    mergedGeometry.attributes.position.getX(0),
-    mergedGeometry.attributes.position.getY(0),
-    mergedGeometry.attributes.position.getZ(0)
-  );
+  // 💡 디버깅
+  const x = mergedGeometry.attributes.position.getX(0);
+  const y = mergedGeometry.attributes.position.getY(0);
+  const z = mergedGeometry.attributes.position.getZ(0);
+  console.log('After center - First vertex:', x, y, z);
 
   const count = mergedGeometry.attributes.position.count;
-  const particleGeo = new THREE.PlaneGeometry(0.008, 0.008);
+  const particleGeo = new THREE.PlaneGeometry(0.01, 0.01); // 💡 크기 약간 키움
   const material = new THREE.MeshBasicMaterial({
     map: particleTexture,
     transparent: true,
@@ -116,7 +114,6 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
   }
 
   scene.add(instanced);
-  camera.lookAt(0, 0, 0);
 });
 
 window.addEventListener('click', (event) => {
