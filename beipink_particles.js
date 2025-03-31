@@ -43,6 +43,7 @@ const mouse = new THREE.Vector2();
 
 const loader = new GLTFLoader();
 loader.load('beipink_text_dusty.glb', (gltf) => {
+	  console.log('GLTF loaded!', gltf);
   const mesh = gltf.scene.children[0];
   if (!mesh) {
     console.error('GLB 파일에 메시가 없음');
