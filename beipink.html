@@ -2,25 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BEIPINK UNIVERSE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BEIPINK</title>
   <style>
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
-      overflow: hidden;
-      height: 100%;
       background-color: black;
+      overflow: hidden;
     }
-
-    #beipinkCanvas {
-      width: 100%;
-      height: 100%;
+    canvas {
       display: block;
     }
   </style>
+</head>
+<body>
+  <canvas id="beipinkCanvas"></canvas>
 
-  <!-- Import Map -->
+  <!-- Import Maps -->
   <script type="importmap">
     {
       "imports": {
@@ -30,52 +28,48 @@
       }
     }
   </script>
-</head>
-<body>
-  <canvas id="beipinkCanvas"></canvas>
 
+  <!-- Main Script -->
   <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
     import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
     const scene = new THREE.Scene();
-
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
     camera.position.set(0, 0, 5);
 
     const renderer = new THREE.WebGLRenderer({
       canvas: document.getElementById('beipinkCanvas'),
-      alpha: true,
-      antialias: true
+      alpha: true
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
 
-    // 조명
     scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
     dirLight.position.set(5, 5, 5);
     scene.add(dirLight);
 
-    // 컨트롤
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
+    controls.enablePan = false;
+    controls.minDistance = 3;
+    controls.maxDistance = 7;
 
-    // GLB 불러오기
     const loader = new GLTFLoader();
     loader.load('beipink_text_dusty.glb', (gltf) => {
-      console.log('✅ GLTF 로드 성공');
-      scene.add(gltf.scene);
+      console.log('GLTF loaded!');
+      const model = gltf.scene;
 
-      // 필요 시 회전/위치 조정
-      gltf.scene.rotation.x = Math.PI / 2;
-      gltf.scene.position.set(0, 0, 0);
+      // ✅ 엎어진 것을 세우기 위해 X축 -90도 회전
+      model.rotation.x = -Math.PI / 2;
+
+      scene.add(model);
     }, undefined, (error) => {
-      console.error('❌ GLTF 로드 실패:', error);
+      console.error('GLTF load error', error);
     });
 
-    // 애니메이션 루프
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
@@ -84,7 +78,6 @@
 
     animate();
 
-    // 반응형
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
