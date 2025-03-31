@@ -3,12 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(
-  45,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  100
-);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
 setCameraPosition();
 
 const renderer = new THREE.WebGLRenderer({
@@ -43,7 +38,7 @@ const mouse = new THREE.Vector2();
 
 const loader = new GLTFLoader();
 loader.load('beipink_text_dusty.glb', (gltf) => {
-
+  console.log('GLTF loaded!');
   const mesh = gltf.scene.children[0];
   if (!mesh) {
     console.error('GLB 파일에 메시가 없음');
@@ -170,6 +165,5 @@ window.addEventListener('resize', () => {
 
 function setCameraPosition() {
   const aspect = window.innerWidth / window.innerHeight;
-  camera.position.set(0, 0, 2);
-
+  camera.position.z = aspect < 1 ? 6 : 5;
 }
