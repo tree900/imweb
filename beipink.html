@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>BEIPINK UNIVERSE</title>
-  <link rel="stylesheet" href="bpstyle.css" />
+  <link rel="stylesheet" href="bpstyle.css?v=999" />
 </head>
 <body>
   <div id="container">
@@ -16,11 +16,17 @@
     <p>This is your content after the logo animation ends.</p>
   </main>
 
-  <!-- 최신 방식: 모듈 기반 Three.js 코드 -->
-	<script type="module" src="beipink.js?v=4"></script>
-<!-- 강제 캐시 무효화 버전 -->
-<link rel="stylesheet" href="bpstyle.css?v=999" />
-<script type="module" src="beipink.js?v=999"></script>
+  <!-- ⭐ 정확한 importmap 경로로 수정 -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./build/three.module.js",
+      "three/examples/jsm/controls/OrbitControls": "./examples/jsm/controls/OrbitControls.js",
+      "three/examples/jsm/loaders/GLTFLoader": "./examples/jsm/loaders/GLTFLoader.js"
+    }
+  }
+  </script>
 
+  <script type="module" src="beipink.js?v=999" defer></script>
 </body>
 </html>
