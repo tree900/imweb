@@ -1,7 +1,6 @@
-// 최신 Three.js CDN 모듈로 불러오기
-import * as THREE from 'https://cdn.skypack.dev/three@0.152.2';
-import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.152.2/examples/jsm/loaders/GLTFLoader.js';
-import { OrbitControls } from 'https://cdn.skypack.dev/three@0.152.2/examples/jsm/controls/OrbitControls.js';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -20,9 +19,8 @@ const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
 dirLight.position.set(5, 5, 5);
 scene.add(dirLight);
 
-// GLTF 로딩 + 애니메이션 재생
+// GLTF 모델 로딩
 let mixer = null;
-
 const loader = new GLTFLoader();
 loader.load('beipink_text_dusty.glb', (gltf) => {
   const model = gltf.scene;
@@ -41,21 +39,21 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
   });
 });
 
-// OrbitControls (마우스 회전)
+// Orbit Controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = false;
 controls.minDistance = 4;
 controls.maxDistance = 6;
 
-// 반응형 처리
+// 반응형 대응
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// 렌더 루프
+// 애니메이션 루프
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
