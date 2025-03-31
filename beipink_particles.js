@@ -2,14 +2,9 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
-// 기본 설정
+// === Scene, Camera, Renderer ===
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(
-  45,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  100
-);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
 setCameraPosition();
 
 const renderer = new THREE.WebGLRenderer({
@@ -19,34 +14,34 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 
-// 조명
+// === Lighting ===
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
 dirLight.position.set(5, 5, 5);
 scene.add(dirLight);
 
-// 컨트롤 (잠금 가능)
+// === Orbit Controls ===
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = false;
 controls.minDistance = 4;
 controls.maxDistance = 6;
 
-// 입자 텍스처
+// === Load Particle Texture ===
 const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
 
-// 입자 변수들
+// === Global Variables ===
 let instanced;
 let originalPositions = [];
 let directions = [];
 let delays = [];
-let colors = [];
 let animationStarted = false;
 let startTime = 0;
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
+// === Load GLTF Logo ===
 const loader = new GLTFLoader();
 loader.load('beipink_text_dusty.glb', (gltf) => {
   const mesh = gltf.scene.children[0];
@@ -87,15 +82,15 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
 
     delays.push(0);
 
-    // 초기 색상: 밝은 핑크
-    const color = new THREE.Color(0.92, 0.85, 0.86);
-    colors.push(color);
+    // 초기 색상 (연한 핑크)
+    const initialColor = new THREE.Color(0.92, 0.85, 0.87);
+    instanced.setColorAt(i, initialColor);
   }
 
   scene.add(instanced);
 });
 
-// 클릭 → 해체 트리거
+// === Click to Trigger Dissolve ===
 window.addEventListener('click', (event) => {
   if (!instanced || animationStarted) return;
 
@@ -107,13 +102,14 @@ window.addEventListener('click', (event) => {
 
   for (let i = 0; i < originalPositions.length; i++) {
     const distance = originalPositions[i].distanceTo(clickPoint);
-    delays[i] = distance / 3.5;
+    delays[i] = distance / 3.5; // 점차 확산
   }
 
   startTime = performance.now() / 1000;
   animationStarted = true;
 });
 
+// === Animate Function ===
 const dummy = new THREE.Object3D();
 
 function animate() {
@@ -124,11 +120,12 @@ function animate() {
   const elapsed = now - startTime;
 
   if (instanced) {
-    let finished = true;
+    let allDone = true;
 
     for (let i = 0; i < originalPositions.length; i++) {
       const delay = delays[i];
       const progress = animationStarted ? Math.max(0, Math.min(1, (elapsed - delay) / 3)) : 0;
+
       const move = directions[i].clone().multiplyScalar(progress);
       const pos = originalPositions[i].clone().add(move);
       const scale = 1 - progress;
@@ -138,22 +135,20 @@ function animate() {
       dummy.updateMatrix();
       instanced.setMatrixAt(i, dummy.matrix);
 
-      // 색상 변경 (그라데이션)
+      // === Color Gradient Animation ===
       const color = new THREE.Color();
-      color.r = 0.92 - 0.4 * progress;
-      color.g = 0.86 - 0.4 * progress;
-      color.b = 0.87 - 0.3 * progress;
-
+      color.r = 0.92 - 0.3 * progress; // from (235, 219, 221)
+      color.g = 0.85 - 0.3 * progress; // to (210, 148, 149)
+      color.b = 0.87 - 0.3 * progress; // blend to slightly purple-pink
       instanced.setColorAt(i, color);
 
-      if (progress < 1) finished = false;
+      if (progress < 1) allDone = false;
     }
 
     instanced.instanceMatrix.needsUpdate = true;
     instanced.instanceColor.needsUpdate = true;
 
-    // 입자 완전히 사라지면 콘텐츠 등장
-    if (finished && animationStarted) {
+    if (allDone && animationStarted) {
       document.body.classList.add('animation-complete');
       animationStarted = false;
     }
@@ -164,7 +159,7 @@ function animate() {
 
 animate();
 
-// 모바일 대응
+// === Resize Responsive ===
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   setCameraPosition();
@@ -172,7 +167,7 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// 카메라 위치 조정 함수
+// === Responsive Camera Zoom ===
 function setCameraPosition() {
   const aspect = window.innerWidth / window.innerHeight;
   camera.position.z = aspect < 1 ? 6 : 5;
