@@ -7,8 +7,8 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
 
 // ✅ 입자가 보이도록 카메라 위치 조정
-camera.position.set(1.9, 0.3, 2.5);
-camera.lookAt(1.9, 0.3, 0);
+camera.position.set(0, 0, 5);
+camera.lookAt(0, 0, 0);
 
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('beipinkCanvas'),
@@ -72,10 +72,10 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
   const mergedGeometry = mergeGeometries(geometries, false);
 
   // geometry 중심 이동은 보이게 한 후 다시 조정할 수 있음
-  // mergedGeometry.center();
+  mergedGeometry.center();
 
   const count = mergedGeometry.attributes.position.count;
-  const particleGeo = new THREE.PlaneGeometry(0.08, 0.08); // 입자 크게!
+  const particleGeo = new THREE.PlaneGeometry(0.1, 0.1); // 입자 크게!
   const material = new THREE.MeshBasicMaterial({
     map: particleTexture,
     transparent: true,
