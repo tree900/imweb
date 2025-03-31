@@ -37,16 +37,24 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
 const loader = new GLTFLoader();
-loader.load('beipink_text_dusty.glb', (gltf) => {
+loader.load('beipink_text_dusty_fixed.glb', (gltf) => {
   console.log('GLTF loaded!');
-  const mesh = gltf.scene.children[0];
+  console.log(gltf.scene);
+
+  // 메시 찾기
+  const mesh = gltf.scene.children.find(child => child.isMesh);
   if (!mesh) {
-    console.error('GLB 파일에 메시가 없음');
+    console.error('GLB에 메시 없음');
     return;
   }
 
+  console.log('First mesh:', mesh);
+
   const geometry = mesh.geometry;
   const count = geometry.attributes.position.count;
+
+  // 중심으로 이동
+  geometry.center();
 
   const particleGeo = new THREE.PlaneGeometry(0.008, 0.008);
   const material = new THREE.MeshBasicMaterial({
@@ -81,13 +89,13 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
     ));
 
     delays.push(0);
-
-    const color = new THREE.Color(0.92, 0.85, 0.87); // 초기 색상
+    const color = new THREE.Color(0.92, 0.85, 0.87);
     instanced.setColorAt(i, color);
   }
 
   scene.add(instanced);
 });
+
 
 window.addEventListener('click', (event) => {
   if (!instanced || animationStarted) return;
