@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -61,7 +60,7 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
     m.geometry.applyMatrix4(m.matrixWorld);
     return m.geometry;
   });
-  const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(geometries, false);
+	const mergedGeometry = mergeGeometries(geometries, false);
   mergedGeometry.center();
 
   const count = mergedGeometry.attributes.position.count;
