@@ -13,7 +13,9 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 
-// 💡 조명 추가
+// 배경이 검정이라 안 보일 수 있으니 회색으로 설정
+renderer.setClearColor(0x222222, 1);
+
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
 dirLight.position.set(5, 5, 5);
@@ -25,24 +27,11 @@ controls.enablePan = false;
 controls.minDistance = 4;
 controls.maxDistance = 6;
 
-const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
-
-let instanced;
-let originalPositions = [];
-let directions = [];
-let delays = [];
-let animationStarted = false;
-let startTime = 0;
-
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-
 const loader = new GLTFLoader();
 loader.load('beipink_text_dusty.glb', (gltf) => {
   console.log('GLTF loaded!');
   console.log(gltf.scene);
 
-  // 메시 찾기
   const mesh = gltf.scene.children.find(child => child.isMesh);
   if (!mesh) {
     console.error('GLB에 메시 없음');
@@ -51,119 +40,22 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
 
   console.log('First mesh:', mesh);
 
-  const geometry = mesh.geometry;
-  const count = geometry.attributes.position.count;
+  // ✅ 메시 중심 정렬
+  mesh.geometry.center();
 
-  // 메시 중심으로 이동
-  geometry.center();
+  // ✅ 컬러 머티리얼 적용해서 잘 보이도록
+  mesh.material = new THREE.MeshNormalMaterial();
 
-  const particleGeo = new THREE.PlaneGeometry(0.008, 0.008);
-  const material = new THREE.MeshBasicMaterial({
-    map: particleTexture,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    vertexColors: true,
-    opacity: 0.9,
-    side: THREE.DoubleSide
-  });
+  // ✅ 메시 추가
+  scene.add(mesh);
 
-  instanced = new THREE.InstancedMesh(particleGeo, material, count);
-  const dummy = new THREE.Object3D();
-
-  for (let i = 0; i < count; i++) {
-    const x = geometry.attributes.position.getX(i);
-    const y = geometry.attributes.position.getY(i);
-    const z = geometry.attributes.position.getZ(i);
-
-    const pos = new THREE.Vector3(x, y, z);
-    originalPositions.push(pos);
-
-    dummy.position.copy(pos);
-    dummy.updateMatrix();
-    instanced.setMatrixAt(i, dummy.matrix);
-
-    directions.push(new THREE.Vector3(
-      (Math.random() - 0.5) * 2,
-      (Math.random() - 0.5) * 2,
-      (Math.random() - 0.5) * 2
-    ));
-
-    delays.push(0);
-    const color = new THREE.Color(0.92, 0.85, 0.87);
-    instanced.setColorAt(i, color);
-  }
-
-  instanced.instanceMatrix.needsUpdate = true;
-  instanced.instanceColor.needsUpdate = true;
-
-  // ✅ 렌더링 보장 위해 카메라 재조정 및 메시 표시 확인용 로직 추가
-  camera.lookAt(new THREE.Vector3(0, 0, 0));
-  scene.add(instanced);
+  // ✅ 시점 고정
+  camera.lookAt(0, 0, 0);
 });
-
-window.addEventListener('click', (event) => {
-  if (!instanced || animationStarted) return;
-
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-  raycaster.setFromCamera(mouse, camera);
-  const clickPoint = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(5));
-
-  for (let i = 0; i < originalPositions.length; i++) {
-    const distance = originalPositions[i].distanceTo(clickPoint);
-    delays[i] = distance / 3.5;
-  }
-
-  startTime = performance.now() / 1000;
-  animationStarted = true;
-});
-
-const dummy = new THREE.Object3D();
 
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
-
-  const now = performance.now() / 1000;
-  const elapsed = now - startTime;
-
-  if (instanced) {
-    let allDone = true;
-
-    for (let i = 0; i < originalPositions.length; i++) {
-      const delay = delays[i];
-      const progress = animationStarted ? Math.max(0, Math.min(1, (elapsed - delay) / 3)) : 0;
-
-      const move = directions[i].clone().multiplyScalar(progress);
-      const pos = originalPositions[i].clone().add(move);
-      const scale = 1 - progress;
-
-      dummy.position.copy(pos);
-      dummy.scale.setScalar(scale > 0 ? scale : 0);
-      dummy.updateMatrix();
-      instanced.setMatrixAt(i, dummy.matrix);
-
-      const color = new THREE.Color();
-      color.r = 0.92 - 0.4 * progress;
-      color.g = 0.86 - 0.4 * progress;
-      color.b = 0.87 - 0.3 * progress;
-
-      instanced.setColorAt(i, color);
-
-      if (progress < 1) allDone = false;
-    }
-
-    instanced.instanceMatrix.needsUpdate = true;
-    instanced.instanceColor.needsUpdate = true;
-
-    if (allDone && animationStarted) {
-      document.body.classList.add('animation-complete');
-      animationStarted = false;
-    }
-  }
-
   renderer.render(scene, camera);
 }
 
