@@ -37,7 +37,7 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
 const loader = new GLTFLoader();
-loader.load('beipink_text_dusty_fixed.glb', (gltf) => {
+loader.load('beipink_text_dusty.glb', (gltf) => {
   console.log('GLTF loaded!');
   console.log(gltf.scene);
 
