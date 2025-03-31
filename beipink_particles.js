@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
-// 기본 설정
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(0, 0, 5);
@@ -27,7 +26,7 @@ controls.enablePan = false;
 controls.minDistance = 4;
 controls.maxDistance = 6;
 
-// 입자 텍스처
+// 텍스처
 const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
 
 const raycaster = new THREE.Raycaster();
@@ -45,8 +44,6 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
   const mesh = gltf.scene.children[0];
   const geometry = mesh.geometry;
   const count = geometry.attributes.position.count;
-
-  // 입자 밀도 조절용 서브디바이드 (선택: Blender에서 미리 적용해도 좋음)
 
   const particleGeo = new THREE.PlaneGeometry(0.008, 0.008);
   const material = new THREE.MeshBasicMaterial({
@@ -74,27 +71,25 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
       (Math.random() - 0.5) * 2,
       (Math.random() - 0.5) * 2
     ));
-    delays.push(0); // 나중에 클릭 기준 거리로 세팅됨
+    delays.push(0);
   }
 
   scene.add(instanced);
 });
 
-// 클릭 → 해체 트리거
+// 클릭 → 해체
 window.addEventListener('click', (event) => {
   if (!instanced || animationStarted) return;
 
-  // 마우스 클릭 좌표 → 정규화
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
   raycaster.setFromCamera(mouse, camera);
-  const clickPoint = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(5)); // 클릭 지점 추정
+  const clickPoint = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(5));
 
-  // 입자마다 해체 거리 기반 지연 계산
   for (let i = 0; i < originalPositions.length; i++) {
     const distance = originalPositions[i].distanceTo(clickPoint);
-    delays[i] = distance / 2; // 퍼지는 속도 조정
+    delays[i] = distance / 2.5;
   }
 
   startTime = performance.now() / 1000;
@@ -108,14 +103,13 @@ function animate() {
   requestAnimationFrame(animate);
   controls.update();
 
-  const currentTime = performance.now() / 1000;
+  const now = performance.now() / 1000;
+  const elapsed = now - startTime;
 
   if (instanced) {
-    const elapsed = currentTime - startTime;
-
     for (let i = 0; i < originalPositions.length; i++) {
       const delay = delays[i];
-      let progress = Math.max(0, Math.min(1, (elapsed - delay) / 2)); // 2초간 분산
+      let progress = animationStarted ? Math.max(0, Math.min(1, (elapsed - delay) / 2)) : 0;
       const move = directions[i].clone().multiplyScalar(progress);
       const pos = originalPositions[i].clone().add(move);
       const scale = 1 - progress;
