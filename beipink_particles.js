@@ -13,7 +13,7 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setClearColor(0x000000, 0); // 배경 투명
+renderer.setClearColor(0x000000, 0); // 투명 배경
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
@@ -42,30 +42,27 @@ const loader = new GLTFLoader();
 loader.load('beipink_text_dusty.glb', (gltf) => {
   console.log('GLTF loaded!');
 
-  gltf.scene.traverse((child) => {
-    if (child.isMesh) {
-      console.log('FOUND MESH:', child.name, child);
-    }
-  });
-  // 모든 메시 검색
   const meshes = [];
   gltf.scene.traverse(child => {
     if (child.isMesh) {
+      console.log('FOUND MESH:', child.name);
       meshes.push(child);
     }
   });
 
   if (meshes.length === 0) {
-    console.error('GLB 파일에 메시가 없습니다!');
+    console.error('No mesh found in GLB!');
     return;
   }
 
-  // 메시들을 하나로 병합된 geometry로 결합
-  const geometries = meshes.map(m => {
-    m.geometry.applyMatrix4(m.matrixWorld);
-    return m.geometry;
+  // ⚠️ 반드시 월드 변환 적용
+  const geometries = meshes.map(mesh => {
+    const geo = mesh.geometry.clone();
+    geo.applyMatrix4(mesh.matrixWorld);
+    return geo;
   });
-	const mergedGeometry = mergeGeometries(geometries, false);
+
+  const mergedGeometry = mergeGeometries(geometries, false);
   mergedGeometry.center();
 
   const count = mergedGeometry.attributes.position.count;
@@ -102,15 +99,13 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
     ));
 
     delays.push(0);
-    const baseColor = new THREE.Color(0.92, 0.85, 0.87); // 시작 색상
-    instanced.setColorAt(i, baseColor);
+    instanced.setColorAt(i, new THREE.Color(0.92, 0.85, 0.87));
   }
 
   scene.add(instanced);
   camera.lookAt(0, 0, 0);
 });
 
-// 클릭 이벤트 → 입자 흩어짐 애니메이션
 window.addEventListener('click', (event) => {
   if (!instanced || animationStarted) return;
 
@@ -154,8 +149,7 @@ function animate() {
       dummy.updateMatrix();
       instanced.setMatrixAt(i, dummy.matrix);
 
-      // 🌈 컬러 그라데이션 (세 가지 컬러 중간값)
-      const color1 = new THREE.Color(0.92, 0.85, 0.87); // 핑크빛
+      const color1 = new THREE.Color(0.92, 0.85, 0.87); // 핑크
       const color2 = new THREE.Color(0.7, 0.8, 1.0);    // 연블루
       const color3 = new THREE.Color(0.8, 1.0, 0.9);    // 민트
       const color = color1.clone().lerp(color2, progress).lerp(color3, progress * 0.5);
