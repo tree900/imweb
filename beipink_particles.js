@@ -79,6 +79,13 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
   // ✅ 중심 정렬 적용
   mergedGeometry.center();
 
+	// ✅ 디버깅용 첫 좌표 확인
+	console.log('After center - First vertex:',
+  mergedGeometry.attributes.position.getX(0),
+  mergedGeometry.attributes.position.getY(0),
+  mergedGeometry.attributes.position.getZ(0)
+	);
+	
   const count = mergedGeometry.attributes.position.count;
   const particleGeo = new THREE.PlaneGeometry(0.08, 0.08); // 입자 크게
   const material = new THREE.MeshBasicMaterial({
