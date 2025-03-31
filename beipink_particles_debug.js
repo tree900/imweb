@@ -1,4 +1,3 @@
-
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -6,7 +5,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.z = 3;
+camera.position.z = 5;
 
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('beipinkCanvas'),
@@ -14,33 +13,37 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setClearColor(0x000000, 0);
-
-scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-dirLight.position.set(5, 5, 5);
-scene.add(dirLight);
+renderer.setClearColor(0x000000, 1); // 검정 배경
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = false;
-controls.minDistance = 1.5;
+controls.minDistance = 2;
 controls.maxDistance = 10;
 
-const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png', () => {
-  console.log("✨ neo_particle.png loaded!");
-});
+scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+dirLight.position.set(3, 3, 5);
+scene.add(dirLight);
 
+// 노란색 디버그 라인 (X, Y, Z 기준 축)
+const axesHelper = new THREE.AxesHelper(5);
+scene.add(axesHelper);
+
+// 텍스처 로드
+const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
+particleTexture.onLoad = () => console.log('✨ neo_particle.png loaded!');
+particleTexture.onError = err => console.error('❌ Failed to load texture:', err);
+
+// 파티클 세팅
 let instanced;
 let originalPositions = [];
-let directions = [];
-let delays = [];
-let animationStarted = false;
-let startTime = 0;
+let dummy = new THREE.Object3D();
 
 const loader = new GLTFLoader();
 loader.load('beipink_text_dusty.glb', (gltf) => {
   console.log('GLTF loaded!');
+
   const meshes = [];
   gltf.scene.traverse(child => {
     if (child.isMesh) {
@@ -56,29 +59,32 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
 
   const geometries = meshes.map(mesh => {
     const geo = mesh.geometry.clone();
-    geo.applyMatrix4(mesh.matrixWorld);
+    geo.applyMatrix4(mesh.matrixWorld); // 월드 변환 적용
     return geo;
   });
 
   const mergedGeometry = mergeGeometries(geometries, false);
-  console.log("After center - First vertex:", mergedGeometry.attributes.position.getX(0), mergedGeometry.attributes.position.getY(0), mergedGeometry.attributes.position.getZ(0));
-  mergedGeometry.center();
+  mergedGeometry.center(); // 중심 정렬
+  console.log("After center - First vertex:", 
+    mergedGeometry.attributes.position.getX(0), 
+    mergedGeometry.attributes.position.getY(0), 
+    mergedGeometry.attributes.position.getZ(0)
+  );
 
+  // 파티클 생성
   const count = mergedGeometry.attributes.position.count;
-  const particleGeo = new THREE.PlaneGeometry(0.03, 0.03);
+  const particleGeo = new THREE.PlaneGeometry(0.015, 0.015); // 디버깅용 크게
   const material = new THREE.MeshBasicMaterial({
     map: particleTexture,
     transparent: true,
-    depthWrite: true,
-    blending: THREE.NormalBlending,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
     vertexColors: true,
     opacity: 1.0,
     side: THREE.DoubleSide
   });
 
   instanced = new THREE.InstancedMesh(particleGeo, material, count);
-  const dummy = new THREE.Object3D();
-
   for (let i = 0; i < count; i++) {
     const pos = new THREE.Vector3(
       mergedGeometry.attributes.position.getX(i),
@@ -90,73 +96,19 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
     dummy.position.copy(pos);
     dummy.updateMatrix();
     instanced.setMatrixAt(i, dummy.matrix);
-
-    directions.push(new THREE.Vector3(
-      (Math.random() - 0.5) * 2,
-      (Math.random() - 0.5) * 2,
-      (Math.random() - 0.5) * 2
-    ));
-    delays.push(0);
-    instanced.setColorAt(i, new THREE.Color(0.92, 0.85, 0.87));
+    instanced.setColorAt(i, new THREE.Color(1, 1, 1)); // 흰색
   }
 
   scene.add(instanced);
-  const boxHelper = new THREE.BoxHelper(instanced, 0xffff00);
-  scene.add(boxHelper);
-
   camera.lookAt(0, 0, 0);
 });
 
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-window.addEventListener('click', (event) => {
-  if (!instanced || animationStarted) return;
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-  raycaster.setFromCamera(mouse, camera);
-
-  const clickPoint = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(5));
-  for (let i = 0; i < originalPositions.length; i++) {
-    const distance = originalPositions[i].distanceTo(clickPoint);
-    delays[i] = distance / 3.5;
-  }
-
-  startTime = performance.now() / 1000;
-  animationStarted = true;
-});
-
-const dummy = new THREE.Object3D();
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
-  const now = performance.now() / 1000;
-  const elapsed = now - startTime;
 
   if (instanced) {
-    let allDone = true;
-    for (let i = 0; i < originalPositions.length; i++) {
-      const delay = delays[i];
-      const progress = animationStarted ? Math.max(0, Math.min(1, (elapsed - delay) / 3)) : 0;
-      const move = directions[i].clone().multiplyScalar(progress);
-      const pos = originalPositions[i].clone().add(move);
-      const scale = 1 - progress;
-
-      dummy.position.copy(pos);
-      dummy.scale.setScalar(scale > 0 ? scale : 0);
-      dummy.updateMatrix();
-      instanced.setMatrixAt(i, dummy.matrix);
-
-      const color = new THREE.Color(0.92 - 0.4 * progress, 0.86 - 0.4 * progress, 0.87 - 0.3 * progress);
-      instanced.setColorAt(i, color);
-      if (progress < 1) allDone = false;
-    }
-
     instanced.instanceMatrix.needsUpdate = true;
-    instanced.instanceColor.needsUpdate = true;
-    if (allDone && animationStarted) {
-      document.body.classList.add('animation-complete');
-      animationStarted = false;
-    }
   }
 
   renderer.render(scene, camera);
