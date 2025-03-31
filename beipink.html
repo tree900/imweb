@@ -1,0 +1,32 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BEIPINK UNIVERSE</title>
+  <link rel="stylesheet" href="bpstyle.css?v=1002" />
+</head>
+<body>
+  <div id="container">
+    <canvas id="beipinkCanvas"></canvas>
+  </div>
+
+  <main id="mainContent">
+    <h1>Welcome to the Main Page</h1>
+    <p>This is your content after the logo animation ends.</p>
+  </main>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./build/three.module.js",
+      "three/examples/jsm/controls/OrbitControls": "./examples/jsm/controls/OrbitControls.js",
+      "three/examples/jsm/loaders/GLTFLoader": "./examples/jsm/loaders/GLTFLoader.js"
+    }
+  }
+  </script>
+
+  <script type="module" src="beipink_particles.js?v=1006" defer></script>
+</body>
+</html>
