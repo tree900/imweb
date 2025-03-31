@@ -13,6 +13,7 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 
+// 💡 조명 추가
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
 dirLight.position.set(5, 5, 5);
@@ -53,7 +54,7 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
   const geometry = mesh.geometry;
   const count = geometry.attributes.position.count;
 
-  // 중심으로 이동
+  // 메시 중심으로 이동
   geometry.center();
 
   const particleGeo = new THREE.PlaneGeometry(0.008, 0.008);
@@ -93,9 +94,13 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
     instanced.setColorAt(i, color);
   }
 
+  instanced.instanceMatrix.needsUpdate = true;
+  instanced.instanceColor.needsUpdate = true;
+
+  // ✅ 렌더링 보장 위해 카메라 재조정 및 메시 표시 확인용 로직 추가
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
   scene.add(instanced);
 });
-
 
 window.addEventListener('click', (event) => {
   if (!instanced || animationStarted) return;
