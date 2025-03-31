@@ -42,6 +42,11 @@ const loader = new GLTFLoader();
 loader.load('beipink_text_dusty.glb', (gltf) => {
   console.log('GLTF loaded!');
 
+  gltf.scene.traverse((child) => {
+    if (child.isMesh) {
+      console.log('FOUND MESH:', child.name, child);
+    }
+  });
   // 모든 메시 검색
   const meshes = [];
   gltf.scene.traverse(child => {
