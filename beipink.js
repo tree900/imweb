@@ -1,3 +1,4 @@
+// 최신 Three.js CDN 모듈로 불러오기
 import * as THREE from 'https://cdn.skypack.dev/three@0.152.2';
 import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.152.2/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'https://cdn.skypack.dev/three@0.152.2/examples/jsm/controls/OrbitControls.js';
@@ -19,7 +20,7 @@ const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
 dirLight.position.set(5, 5, 5);
 scene.add(dirLight);
 
-// GLB + Animation
+// GLTF 로딩 + 애니메이션 재생
 let mixer = null;
 
 const loader = new GLTFLoader();
@@ -40,21 +41,21 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
   });
 });
 
-// OrbitControls (optional)
+// OrbitControls (마우스 회전)
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = false;
 controls.minDistance = 4;
 controls.maxDistance = 6;
 
-// Responsive
+// 반응형 처리
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Animate
+// 렌더 루프
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
