@@ -4,16 +4,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(
-  45,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  100
-);
-
-// ✅ 기본 카메라 위치 – 중심을 보기 좋게
-camera.position.set(0, 0, 5);
-camera.lookAt(0, 0, 0);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.z = 5;
 
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('beipinkCanvas'),
@@ -21,7 +13,7 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setClearColor(0x000000, 0);
+renderer.setClearColor(0x000000, 0); // 배경 투명
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
@@ -31,15 +23,12 @@ scene.add(dirLight);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = false;
-controls.minDistance = 2;
-controls.maxDistance = 10;
+controls.minDistance = 4;
+controls.maxDistance = 6;
 
-const particleTexture = new THREE.TextureLoader().load(
-  './examples/textures/neo_particle.png',
-  () => console.log('✨ neo_particle.png loaded!'),
-  undefined,
-  (err) => console.error('❌ Failed to load neo_particle.png', err)
-);
+const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
+particleTexture.onLoad = () => console.log('✨ neo_particle.png loaded!');
+particleTexture.onError = () => console.error('❌ Failed to load neo_particle.png');
 
 let instanced;
 let originalPositions = [];
@@ -54,6 +43,9 @@ const mouse = new THREE.Vector2();
 const loader = new GLTFLoader();
 loader.load('beipink_text_dusty.glb', (gltf) => {
   console.log('GLTF loaded!');
+
+  // 💡 반드시 먼저 호출!
+  gltf.scene.updateMatrixWorld(true);
 
   const meshes = [];
   gltf.scene.traverse(child => {
@@ -76,25 +68,25 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
 
   const mergedGeometry = mergeGeometries(geometries, false);
 
-  // ✅ 중심 정렬 적용
+  // 📌 중앙 정렬 적용
   mergedGeometry.center();
 
-	// ✅ 디버깅용 첫 좌표 확인
-	console.log('After center - First vertex:',
-  mergedGeometry.attributes.position.getX(0),
-  mergedGeometry.attributes.position.getY(0),
-  mergedGeometry.attributes.position.getZ(0)
-	);
-	
+  // 디버깅용
+  console.log('After center - First vertex:',
+    mergedGeometry.attributes.position.getX(0),
+    mergedGeometry.attributes.position.getY(0),
+    mergedGeometry.attributes.position.getZ(0)
+  );
+
   const count = mergedGeometry.attributes.position.count;
-  const particleGeo = new THREE.PlaneGeometry(0.08, 0.08); // 입자 크게
+  const particleGeo = new THREE.PlaneGeometry(0.008, 0.008);
   const material = new THREE.MeshBasicMaterial({
     map: particleTexture,
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     vertexColors: true,
-    opacity: 1.0,
+    opacity: 0.9,
     side: THREE.DoubleSide
   });
 
@@ -108,10 +100,6 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
       mergedGeometry.attributes.position.getZ(i)
     );
     originalPositions.push(pos);
-
-    if (i === 0) {
-      console.log('📌 First particle position:', pos); // 디버깅용
-    }
 
     dummy.position.copy(pos);
     dummy.updateMatrix();
@@ -128,6 +116,7 @@ loader.load('beipink_text_dusty.glb', (gltf) => {
   }
 
   scene.add(instanced);
+  camera.lookAt(0, 0, 0);
 });
 
 window.addEventListener('click', (event) => {
@@ -173,9 +162,9 @@ function animate() {
       dummy.updateMatrix();
       instanced.setMatrixAt(i, dummy.matrix);
 
-      const color1 = new THREE.Color(0.92, 0.85, 0.87);
-      const color2 = new THREE.Color(0.7, 0.8, 1.0);
-      const color3 = new THREE.Color(0.8, 1.0, 0.9);
+      const color1 = new THREE.Color(0.92, 0.85, 0.87); // 핑크
+      const color2 = new THREE.Color(0.7, 0.8, 1.0);    // 연블루
+      const color3 = new THREE.Color(0.8, 1.0, 0.9);    // 민트
       const color = color1.clone().lerp(color2, progress).lerp(color3, progress * 0.5);
       instanced.setColorAt(i, color);
 
