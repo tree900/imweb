@@ -3,38 +3,44 @@ import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.152.2/examples/jsm/l
 import { OrbitControls } from 'https://cdn.skypack.dev/three@0.152.2/examples/jsm/controls/OrbitControls.js';
 
 const scene = new THREE.Scene();
-
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(0, 0, 5);
 
-const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('beipinkCanvas'), alpha: true });
+const renderer = new THREE.WebGLRenderer({
+  canvas: document.getElementById('beipinkCanvas'),
+  alpha: true
+});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 
-const light = new THREE.DirectionalLight(0xffffff, 2);
-light.position.set(5, 5, 5);
-scene.add(light);
+// Light
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+dirLight.position.set(5, 5, 5);
+scene.add(dirLight);
 
-const ambient = new THREE.AmbientLight(0xffffff, 0.5);
-scene.add(ambient);
+// GLB + Animation
+let mixer = null;
 
-// Load GLB
 const loader = new GLTFLoader();
-loader.load('beipink_text.glb', (gltf) => {
+loader.load('beipink_text_dusty.glb', (gltf) => {
   const model = gltf.scene;
   scene.add(model);
 
-  // Optional: rotate slowly
-  function animate() {
-    requestAnimationFrame(animate);
-    model.rotation.y += 0.005;
-    renderer.render(scene, camera);
-  }
+  mixer = new THREE.AnimationMixer(model);
+  gltf.animations.forEach((clip) => {
+    const action = mixer.clipAction(clip);
+    action.clampWhenFinished = true;
+    action.loop = THREE.LoopOnce;
+    action.play();
+  });
 
-  animate();
+  mixer.addEventListener('finished', () => {
+    document.body.classList.add('animation-complete');
+  });
 });
 
-// Controls (mouse orbit)
+// OrbitControls (optional)
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = false;
@@ -48,12 +54,13 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Scroll interaction
-window.addEventListener('scroll', () => {
-  const scrollY = window.scrollY;
-  if (scrollY > window.innerHeight * 0.3) {
-    document.body.classList.add('scrolled');
-  } else {
-    document.body.classList.remove('scrolled');
-  }
-});
+// Animate
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const delta = clock.getDelta();
+  if (mixer) mixer.update(delta);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
