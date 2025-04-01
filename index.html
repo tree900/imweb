@@ -7,9 +7,18 @@
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
   </style>
+
+  <!-- ⭐ import map 추가 -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./build/three.module.js",
+      "three/addons/": "./examples/jsm/"
+    }
+  }
+  </script>
 </head>
 <body>
-	<script type="module" src="./beipink_particles.js"></script>
-
+  <script type="module" src="./beipink_particles.js"></script>
 </body>
 </html>
