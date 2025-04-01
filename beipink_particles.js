@@ -19,7 +19,7 @@ function init() {
   document.body.appendChild(renderer.domElement);
 
   const loader = new GLTFLoader();
-  loader.load('./examples/textures/beipink_text_dusty.glb', (gltf) => {
+  loader.load('./beipink_text_dusty.glb', (gltf) => {
     textMesh = gltf.scene;
     scene.add(textMesh);
   });
