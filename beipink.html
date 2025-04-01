@@ -18,21 +18,21 @@
 <body>
   <canvas id="beipinkCanvas"></canvas>
 
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "./build/three.module.js",
-        "three/examples/jsm/controls/OrbitControls": "./examples/jsm/controls/OrbitControls.js",
-        "three/examples/jsm/loaders/GLTFLoader": "./examples/jsm/loaders/GLTFLoader.js"
-      }
-    }
-  </script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "./build/three.module.js",
+    "three/examples/jsm/controls/OrbitControls": "./examples/jsm/controls/OrbitControls.js",
+    "three/examples/jsm/loaders/GLTFLoader": "./examples/jsm/loaders/GLTFLoader.js"
+  }
+}
+</script>
 
-  <script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-    import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-
+ <script type="module">
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+  import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+	 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
     camera.position.set(0, 0, 5);
