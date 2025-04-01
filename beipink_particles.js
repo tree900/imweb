@@ -74,7 +74,7 @@ function explodeToParticles(mesh, clickPoint) {
   const tempPositions = [];
 
   mesh.traverse((child) => {
-    if (child.isMesh && child.geometry) {
+    if (child.geometry && (child.isMesh || child.isLine)) {
       const posAttr = child.geometry.attributes.position;
       const matrix = child.matrixWorld;
 
@@ -86,7 +86,7 @@ function explodeToParticles(mesh, clickPoint) {
     }
   });
 
-  const count = Math.min(tempPositions.length, targetCount);
+  const count = tempPositions.length;
   for (let i = 0; i < targetCount; i++) {
     const p = tempPositions[Math.floor(Math.random() * count)];
     allPositions.push(p.x, p.y, p.z);
