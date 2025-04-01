@@ -58,17 +58,20 @@
     controls.maxDistance = 7;
 
     const loader = new GLTFLoader();
-    loader.load('beipink_text_dusty.glb', (gltf) => {
-      console.log('GLTF loaded!');
-      const model = gltf.scene;
+  
+     loader.load('beipink_text_dusty.glb', (gltf) => {
+  console.log('GLTF loaded!');
+  const model = gltf.scene;
 
-      // ✅ 엎어진 것을 세우기 위해 X축 회전
-      gltf.scene.rotation.x = -1.5708; // 약 -90도
+  // 정면 회전 보정
+  model.rotation.order = 'YXZ';
+  model.rotation.x = -Math.PI / 2;
+  model.rotation.z = Math.PI;
 
-      scene.add(model);
-    }, undefined, (error) => {
-      console.error('GLTF load error', error);
-    });
+  scene.add(model);
+}, undefined, (error) => {
+  console.error('GLTF load error', error);
+});
 
     function animate() {
       requestAnimationFrame(animate);
