@@ -1,5 +1,5 @@
-import * as THREE from './build/three.module.js';
-import { GLTFLoader } from './examples/jsm/loaders/GLTFLoader.js';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 let scene, camera, renderer;
 let textMesh;
@@ -18,9 +18,19 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
+  // ✅ 💡 조명 추가 부분!
+  const light = new THREE.DirectionalLight(0xffffff, 1);
+  light.position.set(0, 1, 1).normalize();
+  scene.add(light);
+
+  const ambient = new THREE.AmbientLight(0xffffff, 0.3);
+  scene.add(ambient);
+  // ✅ 조명 끝!
+
   const loader = new GLTFLoader();
   loader.load('./beipink_text_dusty.glb', (gltf) => {
     textMesh = gltf.scene;
+    textMesh.position.set(0, 0, 0);
     scene.add(textMesh);
   });
 
@@ -56,7 +66,7 @@ function onClick(event) {
 }
 
 function explodeToParticles(mesh, clickPoint) {
-  const geometry = mesh.children[0].geometry.clone(); // 첫 번째 메시만 사용
+  const geometry = mesh.children[0].geometry.clone();
   const positionAttr = geometry.attributes.position;
   particleCount = positionAttr.count;
 
@@ -77,7 +87,7 @@ function explodeToParticles(mesh, clickPoint) {
     const dir = new THREE.Vector3().subVectors(worldPos, clickPoint).normalize();
     velocities.push(dir.multiplyScalar(0.01 + Math.random() * 0.02));
     const dist = worldPos.distanceTo(clickPoint);
-    delays.push(dist * 30); // 거리 비례 delay
+    delays.push(dist * 30);
   }
 
   const particleGeo = new THREE.BufferGeometry();
