@@ -73,7 +73,7 @@ function explodeToParticles(mesh, clickPoint) {
   const tempPositions = [];
 
   mesh.traverse((child) => {
-    if (child.geometry && (child.isMesh || child.isLine || child.isLineSegments || child.isLineLoop)) {
+    if (child.geometry && (child.isMesh || child.isLine)) {
       const posAttr = child.geometry.attributes.position;
       const matrix = child.matrixWorld;
 
@@ -81,7 +81,7 @@ function explodeToParticles(mesh, clickPoint) {
         const point = new THREE.Vector3().fromBufferAttribute(posAttr, i).applyMatrix4(matrix);
         tempPositions.push(point.clone());
 
-        // 선의 경우 두 점 사이 보간하여 추가 점 생성
+        // 선 부분: 점 사이 보간해서 밀도 보강
         if (i < posAttr.count - 1) {
           const next = new THREE.Vector3().fromBufferAttribute(posAttr, i + 1).applyMatrix4(matrix);
           for (let j = 1; j <= 10; j++) {
