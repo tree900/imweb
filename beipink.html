@@ -18,7 +18,6 @@
 <body>
   <canvas id="beipinkCanvas"></canvas>
 
-  <!-- Import Maps -->
   <script type="importmap">
     {
       "imports": {
@@ -29,7 +28,6 @@
     }
   </script>
 
-  <!-- Main Script -->
   <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
@@ -53,27 +51,109 @@
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.enablePan = false;
-    controls.minDistance = 3;
-    controls.maxDistance = 7;
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    let instanced, originalPositions = [], directions = [], delays = [];
+    let animationStarted = false, startTime = 0;
+
+    const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
+    const particleMaterial = new THREE.MeshBasicMaterial({
+      map: particleTexture,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      opacity: 0.85
+    });
 
     const loader = new GLTFLoader();
-  
-     loader.load('beipink_text_dusty.glb', (gltf) => {
-  console.log('GLTF loaded!');
-  const model = gltf.scene;
+    loader.load('beipink_text_dusty.glb', (gltf) => {
+      console.log('GLTF loaded!');
+      const mesh = gltf.scene.children[0];
+      mesh.rotation.set(0, 0, 0);
+      const geometry = mesh.geometry;
 
-  // 정면 회전 보정
-model.rotation.set(0, 0, 0);       // ✅ 정확히 정면 방향
+      const count = geometry.attributes.position.count;
+      const particleGeo = new THREE.PlaneGeometry(0.01, 0.01);
+      instanced = new THREE.InstancedMesh(particleGeo, particleMaterial, count);
+      const dummy = new THREE.Object3D();
 
-  scene.add(model);
-}, undefined, (error) => {
-  console.error('GLTF load error', error);
-});
+      for (let i = 0; i < count; i++) {
+        const x = geometry.attributes.position.getX(i);
+        const y = geometry.attributes.position.getY(i);
+        const z = geometry.attributes.position.getZ(i);
+        const pos = new THREE.Vector3(x, y, z);
+        originalPositions.push(pos);
+
+        dummy.position.copy(pos);
+        dummy.scale.setScalar(1);
+        dummy.updateMatrix();
+        instanced.setMatrixAt(i, dummy.matrix);
+
+        directions.push(new THREE.Vector3(
+          (Math.random() - 0.5) * 2,
+          (Math.random() - 0.5) * 2,
+          (Math.random() - 0.5) * 2
+        ));
+        delays.push(0);
+      }
+
+      scene.add(instanced);
+    });
+
+    window.addEventListener('click', (e) => {
+      if (!instanced || animationStarted) return;
+
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+
+      const clickPoint = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(5));
+      for (let i = 0; i < originalPositions.length; i++) {
+        const distance = originalPositions[i].distanceTo(clickPoint);
+        delays[i] = distance / 4;
+      }
+
+      startTime = performance.now() / 1000;
+      animationStarted = true;
+    });
+
+    const dummy = new THREE.Object3D();
 
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
+
+      const now = performance.now() / 1000;
+      const elapsed = now - startTime;
+
+      if (instanced) {
+        let finished = true;
+
+        for (let i = 0; i < originalPositions.length; i++) {
+          const delay = delays[i];
+          const progress = animationStarted ? Math.max(0, Math.min(1, (elapsed - delay) / 3)) : 0;
+          const move = directions[i].clone().multiplyScalar(progress);
+          const pos = originalPositions[i].clone().add(move);
+          const scale = 1 - progress;
+
+          dummy.position.copy(pos);
+          dummy.scale.setScalar(scale > 0 ? scale : 0);
+          dummy.updateMatrix();
+          instanced.setMatrixAt(i, dummy.matrix);
+
+          if (progress < 1) finished = false;
+        }
+
+        instanced.instanceMatrix.needsUpdate = true;
+
+        if (finished && animationStarted) {
+          animationStarted = false;
+          console.log("입자 해체 완료!");
+        }
+      }
+
       renderer.render(scene, camera);
     }
 
