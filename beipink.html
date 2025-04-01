@@ -64,13 +64,7 @@
   const model = gltf.scene;
 
   // 정면 회전 보정
- // model.rotation.x = -Math.PI / 2; // ❌ 이 줄 제거
 model.rotation.set(0, 0, 0);       // ✅ 정확히 정면 방향
-
-// 카메라를 약간 위로 올려서 아래로 바라보게
-//camera.position.set(0, 2, 5);
-//camera.lookAt(0, 0, 0);
-
 
   scene.add(model);
 }, undefined, (error) => {
