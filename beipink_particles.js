@@ -6,6 +6,7 @@ let textMesh;
 let particles;
 let velocities = [], delays = [], startTime = null;
 let particleCount = 0;
+let alphaArray;
 
 init();
 
@@ -18,14 +19,13 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  // ✅ 💡 조명 추가 부분!
+  // 💡 조명
   const light = new THREE.DirectionalLight(0xffffff, 1);
   light.position.set(0, 1, 1).normalize();
   scene.add(light);
 
   const ambient = new THREE.AmbientLight(0xffffff, 0.3);
   scene.add(ambient);
-  // ✅ 조명 끝!
 
   const loader = new GLTFLoader();
   loader.load('./beipink_text_dusty.glb', (gltf) => {
@@ -66,32 +66,38 @@ function onClick(event) {
 }
 
 function explodeToParticles(mesh, clickPoint) {
-  const geometry = mesh.children[0].geometry.clone();
-  const positionAttr = geometry.attributes.position;
-  particleCount = positionAttr.count;
-
-  const positions = new Float32Array(particleCount * 3);
+  const allPositions = [];
   velocities = [];
   delays = [];
+  alphaArray = [];
 
-  for (let i = 0; i < particleCount; i++) {
-    const x = positionAttr.getX(i);
-    const y = positionAttr.getY(i);
-    const z = positionAttr.getZ(i);
+  mesh.traverse((child) => {
+    if (child.isMesh && child.geometry) {
+      const positionAttr = child.geometry.attributes.position;
+      const matrix = child.matrixWorld;
 
-    const worldPos = new THREE.Vector3(x, y, z).applyMatrix4(mesh.children[0].matrixWorld);
-    positions[i * 3] = worldPos.x;
-    positions[i * 3 + 1] = worldPos.y;
-    positions[i * 3 + 2] = worldPos.z;
+      for (let i = 0; i < positionAttr.count; i++) {
+        const local = new THREE.Vector3().fromBufferAttribute(positionAttr, i);
+        const world = local.applyMatrix4(matrix);
 
-    const dir = new THREE.Vector3().subVectors(worldPos, clickPoint).normalize();
-    velocities.push(dir.multiplyScalar(0.01 + Math.random() * 0.02));
-    const dist = worldPos.distanceTo(clickPoint);
-    delays.push(dist * 30);
-  }
+        allPositions.push(world.x, world.y, world.z);
+
+        const dir = new THREE.Vector3().subVectors(world, clickPoint).normalize();
+        const speed = 0.002 + Math.random() * 0.005;
+        const dist = world.distanceTo(clickPoint);
+
+        velocities.push(dir.multiplyScalar(speed));
+        delays.push(dist * 40); // 부식 딜레이
+        alphaArray.push(1); // 초기 불투명도
+      }
+    }
+  });
 
   const particleGeo = new THREE.BufferGeometry();
-  particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  particleGeo.setAttribute(
+    'position',
+    new THREE.BufferAttribute(new Float32Array(allPositions), 3)
+  );
 
   const sprite = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
   const material = new THREE.PointsMaterial({
@@ -99,11 +105,13 @@ function explodeToParticles(mesh, clickPoint) {
     map: sprite,
     transparent: true,
     blending: THREE.AdditiveBlending,
-    depthWrite: false
+    depthWrite: false,
+    vertexColors: false,
   });
 
   particles = new THREE.Points(particleGeo, material);
   scene.add(particles);
+  particleCount = allPositions.length / 3;
   startTime = Date.now();
 }
 
@@ -119,8 +127,17 @@ function animate() {
         posAttr.array[i * 3] += velocities[i].x;
         posAttr.array[i * 3 + 1] += velocities[i].y;
         posAttr.array[i * 3 + 2] += velocities[i].z;
+
+        // 점점 사라지게 하기 위해 alpha 줄이기
+        alphaArray[i] -= 0.005;
+        if (alphaArray[i] < 0) alphaArray[i] = 0;
       }
     }
+
+    // 머티리얼 자체 투명도 업데이트
+    const avgAlpha = alphaArray.reduce((a, b) => a + b, 0) / alphaArray.length;
+    particles.material.opacity = avgAlpha;
+
     posAttr.needsUpdate = true;
   }
 
