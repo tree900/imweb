@@ -16,9 +16,9 @@
   </style>
 </head>
 <body>
-  <canvas id="beipinkCanvas"></canvas>
+<canvas id="beipinkCanvas"></canvas>
 
-  <!-- Import Maps -->
+<!-- Import Map -->
 <script type="importmap">
 {
   "imports": {
@@ -29,61 +29,178 @@
 }
 </script>
 
+<!-- Main -->
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 0, 5);
 
-  <!-- Main Script -->
-  <script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-    import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+const renderer = new THREE.WebGLRenderer({
+  canvas: document.getElementById('beipinkCanvas'),
+  alpha: true
+});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 0, 5);
+// 조명
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+dirLight.position.set(5, 5, 5);
+scene.add(dirLight);
 
-    const renderer = new THREE.WebGLRenderer({
-      canvas: document.getElementById('beipinkCanvas'),
-      alpha: true
-    });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+// 카메라 컨트롤
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.enablePan = false;
+controls.minDistance = 3;
+controls.maxDistance = 7;
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    dirLight.position.set(5, 5, 5);
-    scene.add(dirLight);
+// 입자 관련 변수
+let instanced, originalPositions = [], directions = [], delays = [];
+let animationStarted = false;
+let startTime = 0;
 
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.enablePan = false;
-    controls.minDistance = 3;
-    controls.maxDistance = 7;
+// 클릭 감지용
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
 
-    const loader = new GLTFLoader();
-    loader.load('beipink_text_dusty.glb', (gltf) => {
-      console.log('GLTF loaded!');
-      const model = gltf.scene;
+// 텍스처 (입자 이미지)
+const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
 
-      // ✅ 정면으로 회전
-      model.rotation.set(0, 0, 0);
-      scene.add(model);
-    }, undefined, (error) => {
-      console.error('GLTF load error', error);
-    });
+// GLB 로드
+const loader = new GLTFLoader();
+loader.load('beipink_text_dusty.glb', (gltf) => {
+  console.log('GLTF loaded!');
+  const model = gltf.scene;
+  model.rotation.set(0, 0, 0);
+  scene.add(model); // 정적인 텍스트 고정
 
-    function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
+  const mesh = model.children.find(c => c.isMesh);
+  if (!mesh) {
+    console.error("Mesh not found in GLTF");
+    return;
+  }
+
+  const geometry = mesh.geometry;
+  const count = geometry.attributes.position.count;
+
+  const particleGeo = new THREE.PlaneGeometry(0.008, 0.008);
+  const material = new THREE.MeshBasicMaterial({
+    map: particleTexture,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    vertexColors: true,
+    opacity: 0.9,
+    side: THREE.DoubleSide
+  });
+
+  instanced = new THREE.InstancedMesh(particleGeo, material, count);
+  const dummy = new THREE.Object3D();
+
+  for (let i = 0; i < count; i++) {
+    const x = geometry.attributes.position.getX(i);
+    const y = geometry.attributes.position.getY(i);
+    const z = geometry.attributes.position.getZ(i);
+    const pos = new THREE.Vector3(x, y, z);
+
+    originalPositions.push(pos);
+
+    dummy.position.copy(pos);
+    dummy.updateMatrix();
+    instanced.setMatrixAt(i, dummy.matrix);
+
+    // 랜덤한 방향
+    directions.push(new THREE.Vector3(
+      (Math.random() - 0.5) * 2,
+      (Math.random() - 0.5) * 2,
+      (Math.random() - 0.5) * 2
+    ));
+
+    // 초기 딜레이 0
+    delays.push(0);
+
+    // 색상 설정 (연핑크)
+    instanced.setColorAt(i, new THREE.Color(0.95, 0.85, 0.88));
+  }
+
+  scene.add(instanced);
+}, undefined, (err) => {
+  console.error('GLTF load error', err);
+});
+
+// 클릭 → 해체 트리거
+window.addEventListener('click', (event) => {
+  if (!instanced || animationStarted) return;
+
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+  const clickPoint = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(5));
+
+  for (let i = 0; i < originalPositions.length; i++) {
+    const distance = originalPositions[i].distanceTo(clickPoint);
+    delays[i] = distance / 3.5; // 거리 기반 딜레이
+  }
+
+  animationStarted = true;
+  startTime = performance.now() / 1000;
+});
+
+const dummy = new THREE.Object3D();
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+
+  const now = performance.now() / 1000;
+  const elapsed = now - startTime;
+
+  if (instanced) {
+    let allDone = true;
+
+    for (let i = 0; i < originalPositions.length; i++) {
+      const delay = delays[i];
+      const progress = animationStarted ? Math.max(0, Math.min(1, (elapsed - delay) / 2.5)) : 0;
+      const move = directions[i].clone().multiplyScalar(progress);
+      const pos = originalPositions[i].clone().add(move);
+      const scale = 1 - progress;
+
+      dummy.position.copy(pos);
+      dummy.scale.setScalar(scale > 0 ? scale : 0);
+      dummy.updateMatrix();
+      instanced.setMatrixAt(i, dummy.matrix);
+
+      const color = new THREE.Color(1.0 - 0.5 * progress, 0.85 - 0.3 * progress, 0.9 - 0.3 * progress);
+      instanced.setColorAt(i, color);
+
+      if (progress < 1) allDone = false;
     }
 
-    animate();
+    instanced.instanceMatrix.needsUpdate = true;
+    instanced.instanceColor.needsUpdate = true;
 
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-  </script>
+    if (allDone && animationStarted) {
+      animationStarted = false;
+      console.log("✨ All particles done");
+    }
+  }
+
+  renderer.render(scene, camera);
+}
+
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
 </body>
 </html>
