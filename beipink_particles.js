@@ -70,18 +70,25 @@ function explodeToParticles(mesh, clickPoint) {
   alphaArray = [];
 
   const wind = new THREE.Vector3(0.01, 0.015, 0.002);
-
   const tempPositions = [];
 
   mesh.traverse((child) => {
-    if (child.geometry && (child.isMesh || child.isLine)) {
+    if (child.geometry && (child.isMesh || child.isLine || child.isLineSegments || child.isLineLoop)) {
       const posAttr = child.geometry.attributes.position;
       const matrix = child.matrixWorld;
 
       for (let i = 0; i < posAttr.count; i++) {
-        const local = new THREE.Vector3().fromBufferAttribute(posAttr, i);
-        const world = local.applyMatrix4(matrix);
-        tempPositions.push(world.clone());
+        const point = new THREE.Vector3().fromBufferAttribute(posAttr, i).applyMatrix4(matrix);
+        tempPositions.push(point.clone());
+
+        // 선의 경우 두 점 사이 보간하여 추가 점 생성
+        if (i < posAttr.count - 1) {
+          const next = new THREE.Vector3().fromBufferAttribute(posAttr, i + 1).applyMatrix4(matrix);
+          for (let j = 1; j <= 10; j++) {
+            const interp = new THREE.Vector3().lerpVectors(point, next, j / 10);
+            tempPositions.push(interp.clone());
+          }
+        }
       }
     }
   });
