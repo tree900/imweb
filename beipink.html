@@ -1,169 +1,134 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BEIPINK</title>
-  <style>
-    body {
-      margin: 0;
-      background-color: black;
-      overflow: hidden;
-    }
-    canvas {
-      display: block;
-    }
-  </style>
-</head>
-<body>
-  <canvas id="beipinkCanvas"></canvas>
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "./build/three.module.js",
-        "three/examples/jsm/controls/OrbitControls": "./examples/jsm/controls/OrbitControls.js",
-        "three/examples/jsm/loaders/GLTFLoader": "./examples/jsm/loaders/GLTFLoader.js"
-      }
-    }
-  </script>
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 0, 5);
 
-  <script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-    import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('beipinkCanvas'), alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 0, 5);
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+dirLight.position.set(5, 5, 5);
+scene.add(dirLight);
 
-    const renderer = new THREE.WebGLRenderer({
-      canvas: document.getElementById('beipinkCanvas'),
-      alpha: true
-    });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    dirLight.position.set(5, 5, 5);
-    scene.add(dirLight);
+let instanced, originalPositions = [], directions = [], delays = [], animationStarted = false, startTime = 0;
 
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
+const loader = new GLTFLoader();
+loader.load('beipink_text_dusty.glb', (gltf) => {
+  const mesh = gltf.scene.children[0]; // 텍스트 Mesh
+  const geometry = mesh.geometry;
+  const count = geometry.attributes.position.count;
 
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
+  const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
+  const particleGeo = new THREE.PlaneGeometry(0.008, 0.008);
+  const material = new THREE.MeshBasicMaterial({
+    map: particleTexture,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    vertexColors: true,
+    opacity: 0.9,
+    side: THREE.DoubleSide
+  });
 
-    let instanced, originalPositions = [], directions = [], delays = [];
-    let animationStarted = false, startTime = 0;
+  instanced = new THREE.InstancedMesh(particleGeo, material, count);
+  const dummy = new THREE.Object3D();
 
-    const particleTexture = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
-    const particleMaterial = new THREE.MeshBasicMaterial({
-      map: particleTexture,
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      opacity: 0.85
-    });
+  for (let i = 0; i < count; i++) {
+    const x = geometry.attributes.position.getX(i);
+    const y = geometry.attributes.position.getY(i);
+    const z = geometry.attributes.position.getZ(i);
+    const pos = new THREE.Vector3(x, y, z);
 
-    const loader = new GLTFLoader();
-    loader.load('beipink_text_dusty.glb', (gltf) => {
-      console.log('GLTF loaded!');
-      const mesh = gltf.scene.children[0];
-      mesh.rotation.set(0, 0, 0);
-      const geometry = mesh.geometry;
+    originalPositions.push(pos);
+    dummy.position.copy(pos);
+    dummy.updateMatrix();
+    instanced.setMatrixAt(i, dummy.matrix);
 
-      const count = geometry.attributes.position.count;
-      const particleGeo = new THREE.PlaneGeometry(0.01, 0.01);
-      instanced = new THREE.InstancedMesh(particleGeo, particleMaterial, count);
-      const dummy = new THREE.Object3D();
+    directions.push(new THREE.Vector3(
+      (Math.random() - 0.5) * 2,
+      (Math.random() - 0.5) * 2,
+      (Math.random() - 0.5) * 2
+    ));
 
-      for (let i = 0; i < count; i++) {
-        const x = geometry.attributes.position.getX(i);
-        const y = geometry.attributes.position.getY(i);
-        const z = geometry.attributes.position.getZ(i);
-        const pos = new THREE.Vector3(x, y, z);
-        originalPositions.push(pos);
+    delays.push(0);
+    const color = new THREE.Color(0.95, 0.8, 0.9); // 연핑크
+    instanced.setColorAt(i, color);
+  }
 
-        dummy.position.copy(pos);
-        dummy.scale.setScalar(1);
-        dummy.updateMatrix();
-        instanced.setMatrixAt(i, dummy.matrix);
+  instanced.instanceMatrix.needsUpdate = true;
+  instanced.instanceColor.needsUpdate = true;
 
-        directions.push(new THREE.Vector3(
-          (Math.random() - 0.5) * 2,
-          (Math.random() - 0.5) * 2,
-          (Math.random() - 0.5) * 2
-        ));
-        delays.push(0);
-      }
+  scene.add(instanced);
+}, undefined, (err) => console.error('GLB 로드 실패:', err));
 
-      scene.add(instanced);
-    });
+// 클릭 시 입자 해체 시작
+window.addEventListener('click', (event) => {
+  if (!instanced || animationStarted) return;
 
-    window.addEventListener('click', (e) => {
-      if (!instanced || animationStarted) return;
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-      raycaster.setFromCamera(mouse, camera);
+  raycaster.setFromCamera(mouse, camera);
+  const clickPoint = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(5));
 
-      const clickPoint = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(5));
-      for (let i = 0; i < originalPositions.length; i++) {
-        const distance = originalPositions[i].distanceTo(clickPoint);
-        delays[i] = distance / 4;
-      }
+  for (let i = 0; i < originalPositions.length; i++) {
+    const dist = originalPositions[i].distanceTo(clickPoint);
+    delays[i] = dist / 4;
+  }
 
-      startTime = performance.now() / 1000;
-      animationStarted = true;
-    });
+  animationStarted = true;
+  startTime = performance.now() / 1000;
+});
 
-    const dummy = new THREE.Object3D();
+const dummy = new THREE.Object3D();
 
-    function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
+function animate() {
+  requestAnimationFrame(animate);
 
-      const now = performance.now() / 1000;
-      const elapsed = now - startTime;
+  const now = performance.now() / 1000;
+  const elapsed = now - startTime;
 
-      if (instanced) {
-        let finished = true;
+  if (instanced && animationStarted) {
+    let allDone = true;
 
-        for (let i = 0; i < originalPositions.length; i++) {
-          const delay = delays[i];
-          const progress = animationStarted ? Math.max(0, Math.min(1, (elapsed - delay) / 3)) : 0;
-          const move = directions[i].clone().multiplyScalar(progress);
-          const pos = originalPositions[i].clone().add(move);
-          const scale = 1 - progress;
+    for (let i = 0; i < originalPositions.length; i++) {
+      const delay = delays[i];
+      const progress = Math.max(0, Math.min(1, (elapsed - delay) / 3));
+      const move = directions[i].clone().multiplyScalar(progress);
+      const pos = originalPositions[i].clone().add(move);
 
-          dummy.position.copy(pos);
-          dummy.scale.setScalar(scale > 0 ? scale : 0);
-          dummy.updateMatrix();
-          instanced.setMatrixAt(i, dummy.matrix);
+      dummy.position.copy(pos);
+      dummy.scale.setScalar(1 - progress);
+      dummy.updateMatrix();
+      instanced.setMatrixAt(i, dummy.matrix);
 
-          if (progress < 1) finished = false;
-        }
+      const color = new THREE.Color().lerpColors(
+        new THREE.Color(0.95, 0.8, 0.9),
+        new THREE.Color(1.0, 1.0, 1.0),
+        progress
+      );
+      instanced.setColorAt(i, color);
 
-        instanced.instanceMatrix.needsUpdate = true;
-
-        if (finished && animationStarted) {
-          animationStarted = false;
-          console.log("입자 해체 완료!");
-        }
-      }
-
-      renderer.render(scene, camera);
+      if (progress < 1) allDone = false;
     }
 
-    animate();
+    instanced.instanceMatrix.needsUpdate = true;
+    instanced.instanceColor.needsUpdate = true;
+  }
 
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-  </script>
-</body>
-</html>
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
