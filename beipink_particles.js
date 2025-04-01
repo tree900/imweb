@@ -73,20 +73,27 @@ function explodeToParticles(mesh, clickPoint) {
   const tempPositions = [];
 
   mesh.traverse((child) => {
-    if (child.geometry && (child.isMesh || child.isLine)) {
+    if (child.geometry) {
       const posAttr = child.geometry.attributes.position;
       const matrix = child.matrixWorld;
 
-      for (let i = 0; i < posAttr.count; i++) {
-        const point = new THREE.Vector3().fromBufferAttribute(posAttr, i).applyMatrix4(matrix);
-        tempPositions.push(point.clone());
-
-        // 선 부분: 점 사이 보간해서 밀도 보강
-        if (i < posAttr.count - 1) {
-          const next = new THREE.Vector3().fromBufferAttribute(posAttr, i + 1).applyMatrix4(matrix);
-          for (let j = 1; j <= 10; j++) {
-            const interp = new THREE.Vector3().lerpVectors(point, next, j / 10);
-            tempPositions.push(interp.clone());
+      if (child.isMesh) {
+        // 메시 부분 샘플링
+        const vertexCount = posAttr.count;
+        for (let i = 0; i < vertexCount; i++) {
+          const point = new THREE.Vector3().fromBufferAttribute(posAttr, i).applyMatrix4(matrix);
+          tempPositions.push(point.clone());
+        }
+      } else if (child.isLine) {
+        // 선 부분 보간을 통한 샘플링
+        const vertexCount = posAttr.count;
+        for (let i = 0; i < vertexCount - 1; i++) {
+          const start = new THREE.Vector3().fromBufferAttribute(posAttr, i).applyMatrix4(matrix);
+          const end = new THREE.Vector3().fromBufferAttribute(posAttr, i + 1).applyMatrix4(matrix);
+          const segmentCount = 10; // 두 정점 사이에 추가할 보간점 수
+          for (let j = 0; j <= segmentCount; j++) {
+            const interpolated = new THREE.Vector3().lerpVectors(start, end, j / segmentCount);
+            tempPositions.push(interpolated.clone());
           }
         }
       }
@@ -104,7 +111,7 @@ function explodeToParticles(mesh, clickPoint) {
     const velocity = dir.multiplyScalar(speed).add(wind.clone().multiplyScalar(Math.random()));
 
     velocities.push(velocity);
-    delays.push(dist * 30);
+    delays.push(dist * 5); // 지연 시간 조정
     alphaArray.push(1);
   }
 
@@ -150,5 +157,6 @@ function animate() {
     posAttr.needsUpdate = true;
   }
 
-  renderer.render(scene, camera);
-}
+  renderer
+::contentReference[oaicite:0]{index=0}
+ 
