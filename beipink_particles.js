@@ -63,12 +63,15 @@ function onClick(event) {
 }
 
 function explodeToParticles(mesh, clickPoint) {
+  const targetCount = 5000;
   const allPositions = [];
   velocities = [];
   delays = [];
   alphaArray = [];
 
   const wind = new THREE.Vector3(0.0015, 0.002, 0); // 바람 효과
+
+  const tempPositions = [];
 
   mesh.traverse((child) => {
     if (child.isMesh && child.geometry) {
@@ -78,20 +81,24 @@ function explodeToParticles(mesh, clickPoint) {
       for (let i = 0; i < positionAttr.count; i++) {
         const local = new THREE.Vector3().fromBufferAttribute(positionAttr, i);
         const world = local.applyMatrix4(matrix);
-
-        allPositions.push(world.x, world.y, world.z);
-
-        const dir = new THREE.Vector3().subVectors(world, clickPoint).normalize();
-        const dist = world.distanceTo(clickPoint);
-        const baseSpeed = 0.002 + Math.random() * 0.005;
-        const velocity = dir.multiplyScalar(baseSpeed).add(wind.clone().multiplyScalar(Math.random()));
-
-        velocities.push(velocity);
-        delays.push(dist * 40); // 퍼짐 효과
-        alphaArray.push(1);
+        tempPositions.push(world.clone());
       }
     }
   });
+
+  for (let i = 0; i < targetCount; i++) {
+    const rand = tempPositions[Math.floor(Math.random() * tempPositions.length)];
+    allPositions.push(rand.x, rand.y, rand.z);
+
+    const dir = new THREE.Vector3().subVectors(rand, clickPoint).normalize();
+    const dist = rand.distanceTo(clickPoint);
+    const baseSpeed = 0.002 + Math.random() * 0.005;
+    const velocity = dir.multiplyScalar(baseSpeed).add(wind.clone().multiplyScalar(Math.random()));
+
+    velocities.push(velocity);
+    delays.push(dist * 40);
+    alphaArray.push(1);
+  }
 
   const particleGeo = new THREE.BufferGeometry();
   particleGeo.setAttribute(
@@ -132,7 +139,6 @@ function animate() {
       }
     }
 
-    // 평균 투명도 기반 전체 opacity 제어
     const avgAlpha = alphaArray.reduce((a, b) => a + b, 0) / alphaArray.length;
     particles.material.opacity = avgAlpha;
 
