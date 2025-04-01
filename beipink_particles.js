@@ -63,48 +63,59 @@ function onClick(event) {
 }
 
 function explodeToParticles(mesh, clickPoint) {
-  const targetCount = 5000;
+  const targetCount = 30000;
   const allPositions = [];
   velocities = [];
   delays = [];
   alphaArray = [];
 
-  const wind = new THREE.Vector3(0.0015, 0.002, 0); // 바람 효과
+  const wind = new THREE.Vector3(0.0015, 0.002, 0);
 
   const tempPositions = [];
 
   mesh.traverse((child) => {
     if (child.isMesh && child.geometry) {
-      const positionAttr = child.geometry.attributes.position;
+      const position = child.geometry.attributes.position;
       const matrix = child.matrixWorld;
 
-      for (let i = 0; i < positionAttr.count; i++) {
-        const local = new THREE.Vector3().fromBufferAttribute(positionAttr, i);
-        const world = local.applyMatrix4(matrix);
-        tempPositions.push(world.clone());
+      for (let i = 0; i < position.count - 2; i += 3) {
+        const a = new THREE.Vector3().fromBufferAttribute(position, i).applyMatrix4(matrix);
+        const b = new THREE.Vector3().fromBufferAttribute(position, i + 1).applyMatrix4(matrix);
+        const c = new THREE.Vector3().fromBufferAttribute(position, i + 2).applyMatrix4(matrix);
+
+        for (let j = 0; j < 10; j++) {
+          const r1 = Math.random(), r2 = Math.random();
+          const sqrtR1 = Math.sqrt(r1);
+          const point = new THREE.Vector3()
+            .addScaledVector(a, 1 - sqrtR1)
+            .addScaledVector(b, sqrtR1 * (1 - r2))
+            .addScaledVector(c, sqrtR1 * r2);
+          tempPositions.push(point);
+        }
       }
     }
   });
 
-  for (let i = 0; i < targetCount; i++) {
-    const rand = tempPositions[Math.floor(Math.random() * tempPositions.length)];
-    allPositions.push(rand.x, rand.y, rand.z);
+  while (tempPositions.length < targetCount) {
+    tempPositions.push(...tempPositions.slice(0, targetCount - tempPositions.length));
+  }
 
-    const dir = new THREE.Vector3().subVectors(rand, clickPoint).normalize();
-    const dist = rand.distanceTo(clickPoint);
-    const baseSpeed = 0.002 + Math.random() * 0.005;
-    const velocity = dir.multiplyScalar(baseSpeed).add(wind.clone().multiplyScalar(Math.random()));
+  for (let i = 0; i < targetCount; i++) {
+    const p = tempPositions[i];
+    allPositions.push(p.x, p.y, p.z);
+
+    const dir = new THREE.Vector3().subVectors(p, clickPoint).normalize();
+    const dist = p.distanceTo(clickPoint);
+    const speed = 0.002 + Math.random() * 0.004;
+    const velocity = dir.multiplyScalar(speed).add(wind.clone().multiplyScalar(Math.random()));
 
     velocities.push(velocity);
-    delays.push(dist * 40);
+    delays.push(dist * 30);
     alphaArray.push(1);
   }
 
   const particleGeo = new THREE.BufferGeometry();
-  particleGeo.setAttribute(
-    'position',
-    new THREE.BufferAttribute(new Float32Array(allPositions), 3)
-  );
+  particleGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(allPositions), 3));
 
   const sprite = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
   const material = new THREE.PointsMaterial({
@@ -117,7 +128,7 @@ function explodeToParticles(mesh, clickPoint) {
 
   particles = new THREE.Points(particleGeo, material);
   scene.add(particles);
-  particleCount = allPositions.length / 3;
+  particleCount = targetCount;
   startTime = Date.now();
 }
 
