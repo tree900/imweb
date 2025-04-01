@@ -69,39 +69,26 @@ function explodeToParticles(mesh, clickPoint) {
   delays = [];
   alphaArray = [];
 
-  const wind = new THREE.Vector3(0.0015, 0.002, 0);
+  const wind = new THREE.Vector3(0.01, 0.015, 0.002);
 
   const tempPositions = [];
 
   mesh.traverse((child) => {
     if (child.isMesh && child.geometry) {
-      const position = child.geometry.attributes.position;
+      const posAttr = child.geometry.attributes.position;
       const matrix = child.matrixWorld;
 
-      for (let i = 0; i < position.count - 2; i += 3) {
-        const a = new THREE.Vector3().fromBufferAttribute(position, i).applyMatrix4(matrix);
-        const b = new THREE.Vector3().fromBufferAttribute(position, i + 1).applyMatrix4(matrix);
-        const c = new THREE.Vector3().fromBufferAttribute(position, i + 2).applyMatrix4(matrix);
-
-        for (let j = 0; j < 10; j++) {
-          const r1 = Math.random(), r2 = Math.random();
-          const sqrtR1 = Math.sqrt(r1);
-          const point = new THREE.Vector3()
-            .addScaledVector(a, 1 - sqrtR1)
-            .addScaledVector(b, sqrtR1 * (1 - r2))
-            .addScaledVector(c, sqrtR1 * r2);
-          tempPositions.push(point);
-        }
+      for (let i = 0; i < posAttr.count; i++) {
+        const local = new THREE.Vector3().fromBufferAttribute(posAttr, i);
+        const world = local.applyMatrix4(matrix);
+        tempPositions.push(world.clone());
       }
     }
   });
 
-  while (tempPositions.length < targetCount) {
-    tempPositions.push(...tempPositions.slice(0, targetCount - tempPositions.length));
-  }
-
+  const count = Math.min(tempPositions.length, targetCount);
   for (let i = 0; i < targetCount; i++) {
-    const p = tempPositions[i];
+    const p = tempPositions[Math.floor(Math.random() * count)];
     allPositions.push(p.x, p.y, p.z);
 
     const dir = new THREE.Vector3().subVectors(p, clickPoint).normalize();
@@ -145,7 +132,7 @@ function animate() {
         posAttr.array[i * 3 + 1] += velocities[i].y;
         posAttr.array[i * 3 + 2] += velocities[i].z;
 
-        alphaArray[i] -= 0.004;
+        alphaArray[i] -= 0.003;
         if (alphaArray[i] < 0) alphaArray[i] = 0;
       }
     }
