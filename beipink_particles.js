@@ -19,13 +19,10 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  // 💡 조명
   const light = new THREE.DirectionalLight(0xffffff, 1);
   light.position.set(0, 1, 1).normalize();
   scene.add(light);
-
-  const ambient = new THREE.AmbientLight(0xffffff, 0.3);
-  scene.add(ambient);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.3));
 
   const loader = new GLTFLoader();
   loader.load('./beipink_text_dusty.glb', (gltf) => {
@@ -71,6 +68,8 @@ function explodeToParticles(mesh, clickPoint) {
   delays = [];
   alphaArray = [];
 
+  const wind = new THREE.Vector3(0.0015, 0.002, 0); // 바람 효과
+
   mesh.traverse((child) => {
     if (child.isMesh && child.geometry) {
       const positionAttr = child.geometry.attributes.position;
@@ -83,12 +82,13 @@ function explodeToParticles(mesh, clickPoint) {
         allPositions.push(world.x, world.y, world.z);
 
         const dir = new THREE.Vector3().subVectors(world, clickPoint).normalize();
-        const speed = 0.002 + Math.random() * 0.005;
         const dist = world.distanceTo(clickPoint);
+        const baseSpeed = 0.002 + Math.random() * 0.005;
+        const velocity = dir.multiplyScalar(baseSpeed).add(wind.clone().multiplyScalar(Math.random()));
 
-        velocities.push(dir.multiplyScalar(speed));
-        delays.push(dist * 40); // 부식 딜레이
-        alphaArray.push(1); // 초기 불투명도
+        velocities.push(velocity);
+        delays.push(dist * 40); // 퍼짐 효과
+        alphaArray.push(1);
       }
     }
   });
@@ -101,12 +101,11 @@ function explodeToParticles(mesh, clickPoint) {
 
   const sprite = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
   const material = new THREE.PointsMaterial({
-    size: 0.05,
+    size: 0.04,
     map: sprite,
     transparent: true,
     blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    vertexColors: false,
+    depthWrite: false
   });
 
   particles = new THREE.Points(particleGeo, material);
@@ -128,13 +127,12 @@ function animate() {
         posAttr.array[i * 3 + 1] += velocities[i].y;
         posAttr.array[i * 3 + 2] += velocities[i].z;
 
-        // 점점 사라지게 하기 위해 alpha 줄이기
-        alphaArray[i] -= 0.005;
+        alphaArray[i] -= 0.004;
         if (alphaArray[i] < 0) alphaArray[i] = 0;
       }
     }
 
-    // 머티리얼 자체 투명도 업데이트
+    // 평균 투명도 기반 전체 opacity 제어
     const avgAlpha = alphaArray.reduce((a, b) => a + b, 0) / alphaArray.length;
     particles.material.opacity = avgAlpha;
 
