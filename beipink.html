@@ -23,8 +23,8 @@
     {
       "imports": {
         "three": "./build/three.module.js",
-        "three/examples/jsm/controls/OrbitControls": "./examples/jsm/controls/OrbitControls.js",
-        "three/examples/jsm/loaders/GLTFLoader": "./examples/jsm/loaders/GLTFLoader.js"
+        "three/examples/jsm/controls/OrbitControls": "./examples/jsm/controls/OrbitControls",
+        "three/examples/jsm/loaders/GLTFLoader": "./examples/jsm/loaders/GLTFLoader"
       }
     }
   </script>
@@ -32,7 +32,7 @@
   <!-- Main Script -->
   <script type="module">
     import * as THREE from 'three';
-    import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+    import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
     import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
     const scene = new THREE.Scene();
