@@ -23,7 +23,7 @@
     }
   </style>
 
-  <!-- 최신 three.js + ESM import map 구성 -->
+  <!-- 최신 Three.js + Import map 구조 -->
   <script type="importmap">
     {
       "imports": {
@@ -37,7 +37,7 @@
 </head>
 <body>
   <div id="main-content">
-    <!-- 메인 콘텐츠가 여기에 들어감 -->
+    <!-- 여기에 네 메인 콘텐츠 들어가면 됨 -->
   </div>
 
   <script type="module">
@@ -49,7 +49,6 @@
     let scene, camera, renderer;
     let textMesh, particles;
     const particleCount = 30000;
-    const particlePositions = new Float32Array(particleCount * 3);
 
     init();
     animate();
@@ -63,16 +62,14 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
 
-      // GLB 로딩
       const loader = new GLTFLoader();
       loader.load('./beipink.glb', (gltf) => {
-        textMesh = gltf.scene.children[0];
+        textMesh = gltf.scene;
         textMesh.scale.set(10, 10, 10);
-        textMesh.position.set(0, 0, 0);
         centerMesh(textMesh);
         applyGradientToText(textMesh);
         scene.add(textMesh);
-        createParticles();
+        createParticles(textMesh);
         rotateText();
       });
 
@@ -111,18 +108,34 @@
         `,
         side: THREE.DoubleSide
       });
+
       mesh.traverse(child => {
-        if (child.isMesh) child.material = gradientMaterial;
+        if (child.isMesh) {
+          child.material = gradientMaterial;
+        }
       });
     }
 
-    function createParticles() {
-      const sampler = new MeshSurfaceSampler(textMesh).build();
+    function createParticles(parentMesh) {
+      let meshForSampling = null;
+      parentMesh.traverse(child => {
+        if (child.isMesh && child.geometry && child.geometry.isBufferGeometry) {
+          meshForSampling = child;
+        }
+      });
+
+      if (!meshForSampling) {
+        console.error('입자 샘플링용 메시가 없습니다.');
+        return;
+      }
+
+      const sampler = new MeshSurfaceSampler(meshForSampling).build();
       const positions = new Float32Array(particleCount * 3);
+
+      const tempPosition = new THREE.Vector3();
       for (let i = 0; i < particleCount; i++) {
-        const pos = new THREE.Vector3();
-        sampler.sample(pos);
-        positions.set([pos.x, pos.y, pos.z], i * 3);
+        sampler.sample(tempPosition);
+        positions.set([tempPosition.x, tempPosition.y, tempPosition.z], i * 3);
       }
 
       const geometry = new THREE.BufferGeometry();
@@ -155,16 +168,19 @@
       scene.remove(textMesh);
       particles.visible = true;
 
+      const positions = particles.geometry.attributes.position.array;
+
       for (let i = 0; i < particleCount; i++) {
         const i3 = i * 3;
         const vx = (Math.random() - 0.5) * 100;
         const vy = (Math.random() - 0.5) * 100;
         const vz = (Math.random() - 0.5) * 100;
-        gsap.to(particles.geometry.attributes.position.array, {
-          [i3]: particles.geometry.attributes.position.array[i3] + vx,
-          [i3 + 1]: particles.geometry.attributes.position.array[i3 + 1] + vy,
-          [i3 + 2]: particles.geometry.attributes.position.array[i3 + 2] + vz,
-          duration: 2 + Math.random(),
+
+        gsap.to(positions, {
+          [i3]: positions[i3] + vx,
+          [i3 + 1]: positions[i3 + 1] + vy,
+          [i3 + 2]: positions[i3 + 2] + vz,
+          duration: 2.5,
           ease: "power2.out",
           onUpdate: () => {
             particles.geometry.attributes.position.needsUpdate = true;
