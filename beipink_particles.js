@@ -1,3 +1,4 @@
+
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
@@ -71,26 +72,24 @@ function explodeToParticles(mesh, clickPoint) {
 
   const wind = new THREE.Vector3(0.01, 0.015, 0.002);
   const tempPositions = [];
+  const DENSITY_PER_UNIT = 100;
 
   mesh.traverse((child) => {
-    if (child.geometry) {
+    if (child.geometry && (child.isMesh || child.isLine || child.isLineSegments)) {
       const posAttr = child.geometry.attributes.position;
       const matrix = child.matrixWorld;
 
-      if (child.isMesh) {
-        for (let i = 0; i < posAttr.count; i++) {
-          const point = new THREE.Vector3().fromBufferAttribute(posAttr, i).applyMatrix4(matrix);
-          tempPositions.push(point.clone());
-        }
-      } else if (child.isLine || child.isLineSegments) {
-        for (let i = 0; i < posAttr.count - 1; i++) {
-          const start = new THREE.Vector3().fromBufferAttribute(posAttr, i).applyMatrix4(matrix);
-          const end = new THREE.Vector3().fromBufferAttribute(posAttr, i + 1).applyMatrix4(matrix);
-          const segmentCount = 10;
-          for (let j = 0; j <= segmentCount; j++) {
-            const interpolated = new THREE.Vector3().lerpVectors(start, end, j / segmentCount);
-            tempPositions.push(interpolated.clone());
-          }
+      for (let i = 0; i < posAttr.count - 1; i++) {
+        const a = new THREE.Vector3().fromBufferAttribute(posAttr, i).applyMatrix4(matrix);
+        const b = new THREE.Vector3().fromBufferAttribute(posAttr, i + 1).applyMatrix4(matrix);
+
+        const dist = a.distanceTo(b);
+        const samples = Math.ceil(dist * DENSITY_PER_UNIT);
+
+        for (let j = 0; j <= samples; j++) {
+          const t = j / samples;
+          const point = new THREE.Vector3().lerpVectors(a, b, t);
+          tempPositions.push(point);
         }
       }
     }
@@ -107,7 +106,7 @@ function explodeToParticles(mesh, clickPoint) {
     const velocity = dir.multiplyScalar(speed).add(wind.clone().multiplyScalar(Math.random()));
 
     velocities.push(velocity);
-    delays.push(dist * 5); // 부식 자연스러움 조절
+    delays.push(dist * 30);
     alphaArray.push(1);
   }
 
