@@ -36,7 +36,7 @@
 </head>
 <body>
   <div id="main-content">
-    <!-- 메인 콘텐츠 자리 -->
+    <!-- 메인 콘텐츠 -->
   </div>
 
   <script type="module">
@@ -58,7 +58,7 @@
       camera.position.set(0, 0, 120);
       camera.lookAt(0, 0, 0);
 
-      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
 
@@ -66,13 +66,12 @@
       loader.load('./beipink.glb', (gltf) => {
         textMesh = gltf.scene;
         textMesh.scale.set(10, 10, 10);
-        textMesh.rotation.set(0, 0, Math.PI); // 정면 보정
-
+        textMesh.rotation.set(Math.PI, 0, Math.PI); // 글자 정면 보정
         centerMesh(textMesh);
         applyGradientToText(textMesh);
         scene.add(textMesh);
         createParticles(textMesh);
-        rotateText(); // y축 회전
+        rotateText();
       });
 
       window.addEventListener('resize', onWindowResize, false);
@@ -119,17 +118,15 @@
     }
 
     function createParticles(parentMesh) {
+      const textureLoader = new THREE.TextureLoader();
+      const sprite = textureLoader.load('./examples/textures/neo_particle.png');
+
       let meshForSampling = null;
       parentMesh.traverse(child => {
         if (child.isMesh && child.geometry && child.geometry.isBufferGeometry) {
           meshForSampling = child;
         }
       });
-
-      if (!meshForSampling) {
-        console.error('샘플링할 메시가 없습니다.');
-        return;
-      }
 
       const sampler = new MeshSurfaceSampler(meshForSampling).build();
       const positions = new Float32Array(particleCount * 3);
@@ -144,8 +141,11 @@
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
       const material = new THREE.PointsMaterial({
-        size: 0.5,
-        color: new THREE.Color('#ffb6c1')
+        size: 1.5,
+        map: sprite,
+        transparent: true,
+        alphaTest: 0.5,
+        depthWrite: false
       });
 
       particles = new THREE.Points(geometry, material);
@@ -187,9 +187,9 @@
         const dist = p.distanceTo(clickPos);
         const delay = dist * 0.01;
 
-        const vx = (Math.random() - 0.5) * 80;
-        const vy = (Math.random() - 0.5) * 80;
-        const vz = (Math.random() - 0.5) * 80;
+        const vx = (Math.random() - 0.5) * 30;
+        const vy = (Math.random() - 0.5) * 30;
+        const vz = (Math.random() - 0.5) * 30;
 
         gsap.to(pos, {
           [i3]: pos[i3] + vx,
@@ -197,7 +197,7 @@
           [i3 + 2]: pos[i3 + 2] + vz,
           delay: delay,
           duration: 2,
-          ease: "power2.out",
+          ease: "sine.out",
           onUpdate: () => {
             particles.geometry.attributes.position.needsUpdate = true;
           }
