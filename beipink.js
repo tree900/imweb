@@ -1,3 +1,4 @@
+// beipink.js
 
 import * as THREE from './build/three.module.js';
 import { GLTFLoader } from './examples/jsm/loaders/GLTFLoader.js';
@@ -19,21 +20,25 @@ function init() {
   camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
   camera.position.set(0, 0, 10);
 
-  renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("bgCanvas"), alpha: true });
+  renderer = new THREE.WebGLRenderer({
+    canvas: document.getElementById("bgCanvas"),
+    alpha: true,
+    antialias: true
+  });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
 
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
 
-  // Load GLB
+  // GLB 로드
   const loader = new GLTFLoader();
   loader.load('./beipink.glb', (gltf) => {
     particleMesh = gltf.scene;
     scene.add(particleMesh);
   });
 
-  // 클릭 시 ClickPosition 업데이트
+  // 클릭 시 ClickPosition 계산
   window.addEventListener('click', (event) => {
     if (hasClicked || !particleMesh) return;
     hasClicked = true;
@@ -49,27 +54,16 @@ function init() {
 
     if (intersects.length > 0) {
       clickPosition.copy(intersects[0].point);
-      applyClickPosition(clickPosition);
+      console.log("📌 ClickPosition:", clickPosition); // 디버깅용
       fadeInMainContent();
     }
   });
 
+  // 창 크기 조절 대응
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-}
-
-function applyClickPosition(vec3) {
-  particleMesh.traverse((child) => {
-    if (child.isMesh && child.geometry && child.material) {
-      const nodeModifier = child.userData?.gltfExtensions?.KHR_materials_variants;
-      const modifier = child?.modifiers?.find?.(m => m.name === "DisperseGeo");
-      if (modifier && modifier.inputs) {
-        modifier.inputs["ClickPosition"] = vec3;
-      }
-    }
   });
 }
 
