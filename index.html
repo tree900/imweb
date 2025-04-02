@@ -15,7 +15,7 @@
       position: absolute;
       top: 0; left: 0;
       width: 100vw; height: 100vh;
-      background: white; /* 실제 콘텐츠 색상으로 교체 */
+      background: white;
       z-index: 10;
     }
     canvas {
@@ -23,7 +23,6 @@
     }
   </style>
 
-  <!-- 최신 Three.js + Import map 구조 -->
   <script type="importmap">
     {
       "imports": {
@@ -37,7 +36,7 @@
 </head>
 <body>
   <div id="main-content">
-    <!-- 여기에 네 메인 콘텐츠 들어가면 됨 -->
+    <!-- 애니메이션 끝난 후에 보여줄 메인 콘텐츠 -->
   </div>
 
   <script type="module">
@@ -56,7 +55,8 @@
     function init() {
       scene = new THREE.Scene();
       camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.z = 100;
+      camera.position.set(0, 0, 120);
+      camera.lookAt(0, 0, 0);
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -66,6 +66,7 @@
       loader.load('./beipink.glb', (gltf) => {
         textMesh = gltf.scene;
         textMesh.scale.set(10, 10, 10);
+        textMesh.rotation.x = -Math.PI / 2; // 정면 보기용 회전
         centerMesh(textMesh);
         applyGradientToText(textMesh);
         scene.add(textMesh);
@@ -125,17 +126,17 @@
       });
 
       if (!meshForSampling) {
-        console.error('입자 샘플링용 메시가 없습니다.');
+        console.error('샘플링할 메시가 없습니다.');
         return;
       }
 
       const sampler = new MeshSurfaceSampler(meshForSampling).build();
       const positions = new Float32Array(particleCount * 3);
+      const tempPos = new THREE.Vector3();
 
-      const tempPosition = new THREE.Vector3();
       for (let i = 0; i < particleCount; i++) {
-        sampler.sample(tempPosition);
-        positions.set([tempPosition.x, tempPosition.y, tempPosition.z], i * 3);
+        sampler.sample(tempPos);
+        positions.set([tempPos.x, tempPos.y, tempPos.z], i * 3);
       }
 
       const geometry = new THREE.BufferGeometry();
@@ -162,7 +163,7 @@
       });
     }
 
-    function onMouseClick(event) {
+    function onMouseClick() {
       if (!textMesh || !particles) return;
 
       scene.remove(textMesh);
