@@ -36,7 +36,7 @@
 </head>
 <body>
   <div id="main-content">
-    <!-- 메인 콘텐츠 자리 -->
+    <!-- 메인 콘텐츠 영역 -->
   </div>
 
   <script type="module">
@@ -66,12 +66,15 @@
       loader.load('./beipink.glb', (gltf) => {
         textMesh = gltf.scene;
         textMesh.scale.set(10, 10, 10);
-        textMesh.rotation.x = Math.PI; // 글자 정면 보정
+
+        // 👉 회전 보정: 글자 눕는 현상 제거
+        textMesh.rotation.set(0, 0, Math.PI);
+
         centerMesh(textMesh);
         applyGradientToText(textMesh);
         scene.add(textMesh);
         createParticles(textMesh);
-        rotateText(); // Y축 기준으로 회전
+        rotateText(); // y축 회전
       });
 
       window.addEventListener('resize', onWindowResize, false);
