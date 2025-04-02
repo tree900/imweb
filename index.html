@@ -36,7 +36,7 @@
 </head>
 <body>
   <div id="main-content">
-    <!-- 메인 콘텐츠 영역 -->
+    <!-- 메인 콘텐츠 자리 -->
   </div>
 
   <script type="module">
@@ -66,9 +66,7 @@
       loader.load('./beipink.glb', (gltf) => {
         textMesh = gltf.scene;
         textMesh.scale.set(10, 10, 10);
-
-        // 👉 회전 보정: 글자 눕는 현상 제거
-        textMesh.rotation.set(0, 0, Math.PI);
+        textMesh.rotation.set(0, 0, Math.PI); // 정면 보정
 
         centerMesh(textMesh);
         applyGradientToText(textMesh);
@@ -166,25 +164,39 @@
       });
     }
 
-    function onMouseClick() {
+    function onMouseClick(event) {
       if (!textMesh || !particles) return;
 
       scene.remove(textMesh);
       particles.visible = true;
 
-      const positions = particles.geometry.attributes.position.array;
+      const pos = particles.geometry.attributes.position.array;
+      const mouse = new THREE.Vector2(
+        (event.clientX / window.innerWidth) * 2 - 1,
+        -(event.clientY / window.innerHeight) * 2 + 1
+      );
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+
+      const clickPos = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(30));
 
       for (let i = 0; i < particleCount; i++) {
         const i3 = i * 3;
-        const vx = (Math.random() - 0.5) * 100;
-        const vy = (Math.random() - 0.5) * 100;
-        const vz = (Math.random() - 0.5) * 100;
+        const p = new THREE.Vector3(pos[i3], pos[i3 + 1], pos[i3 + 2]);
+        const dist = p.distanceTo(clickPos);
+        const delay = dist * 0.01;
 
-        gsap.to(positions, {
-          [i3]: positions[i3] + vx,
-          [i3 + 1]: positions[i3 + 1] + vy,
-          [i3 + 2]: positions[i3 + 2] + vz,
-          duration: 2.5,
+        const vx = (Math.random() - 0.5) * 80;
+        const vy = (Math.random() - 0.5) * 80;
+        const vz = (Math.random() - 0.5) * 80;
+
+        gsap.to(pos, {
+          [i3]: pos[i3] + vx,
+          [i3 + 1]: pos[i3 + 1] + vy,
+          [i3 + 2]: pos[i3 + 2] + vz,
+          delay: delay,
+          duration: 2,
           ease: "power2.out",
           onUpdate: () => {
             particles.geometry.attributes.position.needsUpdate = true;
