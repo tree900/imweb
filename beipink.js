@@ -32,7 +32,7 @@ function init() {
 
   // GLB 로드
   const loader = new GLTFLoader();
-  loader.load('./beipink.glb', (gltf) => {
+  loader.load('./imweb/beipink.glb', (gltf) => {
     particleMesh = gltf.scene;
     scene.add(particleMesh);
   });
