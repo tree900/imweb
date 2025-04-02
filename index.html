@@ -36,7 +36,7 @@
 </head>
 <body>
   <div id="main-content">
-    <!-- 애니메이션 끝난 후에 보여줄 메인 콘텐츠 -->
+    <!-- 메인 콘텐츠 자리 -->
   </div>
 
   <script type="module">
@@ -66,12 +66,12 @@
       loader.load('./beipink.glb', (gltf) => {
         textMesh = gltf.scene;
         textMesh.scale.set(10, 10, 10);
-        textMesh.rotation.x = -Math.PI / 2; // 정면 보기용 회전
+        textMesh.rotation.x = Math.PI; // 글자 정면 보정
         centerMesh(textMesh);
         applyGradientToText(textMesh);
         scene.add(textMesh);
         createParticles(textMesh);
-        rotateText();
+        rotateText(); // Y축 기준으로 회전
       });
 
       window.addEventListener('resize', onWindowResize, false);
@@ -154,7 +154,7 @@
 
     function rotateText() {
       gsap.to(textMesh.rotation, {
-        y: Math.PI * 2,
+        y: textMesh.rotation.y + Math.PI * 2,
         duration: 15,
         ease: "none",
         onComplete: () => {
