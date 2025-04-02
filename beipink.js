@@ -1,8 +1,7 @@
-// beipink.js
 
-import * as THREE from './build/three.module.js';
-import { GLTFLoader } from './examples/jsm/loaders/GLTFLoader.js';
-import { OrbitControls } from './examples/jsm/controls/OrbitControls.js';
+import * as THREE from './imweb/build/three.module.js';
+import { GLTFLoader } from './imweb/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from './imweb/examples/jsm/controls/OrbitControls.js';
 
 let scene, camera, renderer, controls;
 let mixer, clock = new THREE.Clock();
