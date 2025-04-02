@@ -64,7 +64,7 @@ function onClick(event) {
 }
 
 function explodeToParticles(mesh, clickPoint) {
-  const targetCount = 30000;
+  const targetCount = 40000;
   const allPositions = [];
   velocities = [];
   delays = [];
@@ -72,24 +72,32 @@ function explodeToParticles(mesh, clickPoint) {
 
   const wind = new THREE.Vector3(0.01, 0.015, 0.002);
   const tempPositions = [];
-  const DENSITY_PER_UNIT = 100;
 
   mesh.traverse((child) => {
     if (child.geometry && (child.isMesh || child.isLine || child.isLineSegments)) {
       const posAttr = child.geometry.attributes.position;
       const matrix = child.matrixWorld;
 
-      for (let i = 0; i < posAttr.count - 1; i++) {
-        const a = new THREE.Vector3().fromBufferAttribute(posAttr, i).applyMatrix4(matrix);
-        const b = new THREE.Vector3().fromBufferAttribute(posAttr, i + 1).applyMatrix4(matrix);
+      for (let i = 0; i < posAttr.count; i++) {
+        const point = new THREE.Vector3().fromBufferAttribute(posAttr, i).applyMatrix4(matrix);
+        tempPositions.push(point.clone());
 
-        const dist = a.distanceTo(b);
-        const samples = Math.ceil(dist * DENSITY_PER_UNIT);
+        if (i < posAttr.count - 1) {
+          const next = new THREE.Vector3().fromBufferAttribute(posAttr, i + 1).applyMatrix4(matrix);
+          for (let j = 1; j <= 10; j++) {
+            const interp = new THREE.Vector3().lerpVectors(point, next, j / 10);
+            tempPositions.push(interp.clone());
+          }
+        }
 
-        for (let j = 0; j <= samples; j++) {
-          const t = j / samples;
-          const point = new THREE.Vector3().lerpVectors(a, b, t);
-          tempPositions.push(point);
+        // 내부 채우기용 무작위 샘플링
+        for (let j = 0; j < 3; j++) {
+          const offset = new THREE.Vector3(
+            (Math.random() - 0.5) * 0.1,
+            (Math.random() - 0.5) * 0.1,
+            (Math.random() - 0.5) * 0.1
+          );
+          tempPositions.push(point.clone().add(offset));
         }
       }
     }
@@ -115,7 +123,7 @@ function explodeToParticles(mesh, clickPoint) {
 
   const sprite = new THREE.TextureLoader().load('./examples/textures/neo_particle.png');
   const material = new THREE.PointsMaterial({
-    size: 0.04,
+    size: 0.03,
     map: sprite,
     transparent: true,
     blending: THREE.AdditiveBlending,
@@ -141,7 +149,7 @@ function animate() {
         posAttr.array[i * 3 + 1] += velocities[i].y;
         posAttr.array[i * 3 + 2] += velocities[i].z;
 
-        alphaArray[i] -= 0.003;
+        alphaArray[i] -= 0.0025;
         if (alphaArray[i] < 0) alphaArray[i] = 0;
       }
     }
