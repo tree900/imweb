@@ -35,9 +35,7 @@
   </script>
 </head>
 <body>
-  <div id="main-content">
-    <!-- 메인 콘텐츠 -->
-  </div>
+  <div id="main-content"></div>
 
   <script type="module">
     import * as THREE from 'three';
@@ -66,7 +64,8 @@
       loader.load('./beipink.glb', (gltf) => {
         textMesh = gltf.scene;
         textMesh.scale.set(10, 10, 10);
-        textMesh.rotation.set(Math.PI, 0, Math.PI); // 글자 정면 보정
+        textMesh.rotation.set(0, 0, Math.PI / 2); // ✅ Z축 90도 → 정면
+
         centerMesh(textMesh);
         applyGradientToText(textMesh);
         scene.add(textMesh);
@@ -178,7 +177,6 @@
 
       const raycaster = new THREE.Raycaster();
       raycaster.setFromCamera(mouse, camera);
-
       const clickPos = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(30));
 
       for (let i = 0; i < particleCount; i++) {
