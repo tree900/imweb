@@ -66,6 +66,7 @@
       loader.load('./beipink.glb', (gltf) => {
         textMesh = gltf.scene;
         textMesh.scale.set(10, 10, 10);
+        textMesh.rotation.x = -Math.PI / 2; // ✅ 정면 보이게 회전 보정
         centerMesh(textMesh);
         scene.add(textMesh);
       });
