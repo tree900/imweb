@@ -48,6 +48,7 @@
     let scene, camera, renderer;
     let textMesh, particles;
     const particleCount = 30000;
+    let particleMaterial;
 
     init();
     animate();
@@ -69,7 +70,6 @@
 
         centerMesh(textMesh);
         scene.add(textMesh);
-        createParticles(textMesh);
       });
 
       window.addEventListener('resize', onWindowResize, false);
@@ -83,12 +83,12 @@
       mesh.position.sub(center);
     }
 
-    function createParticles(parentMesh) {
+    function createParticlesFrom(mesh) {
       const textureLoader = new THREE.TextureLoader();
       const sprite = textureLoader.load('./examples/textures/neo_particle.png');
 
       let meshForSampling = null;
-      parentMesh.traverse(child => {
+      mesh.traverse(child => {
         if (child.isMesh && child.geometry && child.geometry.isBufferGeometry) {
           meshForSampling = child;
         }
@@ -96,46 +96,85 @@
 
       const sampler = new MeshSurfaceSampler(meshForSampling).build();
       const positions = new Float32Array(particleCount * 3);
-      const tempPos = new THREE.Vector3();
+      const opacities = new Float32Array(particleCount);
 
+      const tempPos = new THREE.Vector3();
       for (let i = 0; i < particleCount; i++) {
         sampler.sample(tempPos);
         positions.set([tempPos.x, tempPos.y, tempPos.z], i * 3);
+        opacities[i] = 1.0;
       }
 
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('opacity', new THREE.BufferAttribute(opacities, 1));
 
-      const material = new THREE.PointsMaterial({
+      particleMaterial = new THREE.PointsMaterial({
         size: 1.5,
         map: sprite,
         transparent: true,
         alphaTest: 0.5,
-        depthWrite: false
+        depthWrite: false,
+        vertexColors: false
       });
 
-      particles = new THREE.Points(geometry, material);
+      particles = new THREE.Points(geometry, particleMaterial);
       scene.add(particles);
     }
 
     function onMouseClick() {
-      if (!textMesh || !particles) return;
+      if (!textMesh) return;
 
-      // 동시에 텍스트 + 입자 같이 왼쪽으로 이동
-      gsap.to(textMesh.position, {
-        x: -200,
-        duration: 3,
-        ease: 'power1.inOut'
-      });
+      scene.remove(textMesh);
+      createParticlesFrom(textMesh);
 
-      gsap.to(particles.position, {
-        x: -200,
-        duration: 3,
-        ease: 'power1.inOut',
-        onComplete: () => {
-          document.getElementById('main-content').style.opacity = 1;
-        }
-      });
+      const pos = particles.geometry.attributes.position.array;
+      const opacities = particles.geometry.attributes.opacity.array;
+
+      for (let i = 0; i < particleCount; i++) {
+        const i3 = i * 3;
+        const delay = Math.random() * 0.5;
+        const vx = -Math.random() * 80;
+        const vy = (Math.random() - 0.5) * 30;
+        const vz = (Math.random() - 0.5) * 10;
+
+        gsap.to(pos, {
+          [i3]: pos[i3] + vx,
+          [i3 + 1]: pos[i3 + 1] + vy,
+          [i3 + 2]: pos[i3 + 2] + vz,
+          duration: 3,
+          delay: delay,
+          ease: "sine.out",
+          onUpdate: () => {
+            particles.geometry.attributes.position.needsUpdate = true;
+          }
+        });
+
+        gsap.to(opacities, {
+          [i]: 0,
+          duration: 3,
+          delay: delay,
+          ease: "sine.inOut",
+          onUpdate: () => {
+            particles.geometry.attributes.opacity.needsUpdate = true;
+          }
+        });
+      }
+
+      particleMaterial.onBeforeCompile = (shader) => {
+        shader.vertexShader = shader.vertexShader.replace(
+          '#include <clipping_planes_vertex>',
+          '#include <clipping_planes_vertex>\nvarying float vOpacity;\nvOpacity = opacity;'
+        );
+        shader.fragmentShader = shader.fragmentShader.replace(
+          '#include <clipping_planes_fragment>',
+          '#include <clipping_planes_fragment>\nvarying float vOpacity;'
+        ).replace(
+          'gl_FragColor = vec4( outgoingLight, diffuseColor.a );',
+          'gl_FragColor = vec4( outgoingLight, vOpacity );'
+        );
+      };
+      particleMaterial.needsUpdate = true;
     }
 
     function onWindowResize() {
