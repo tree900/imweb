@@ -13,8 +13,10 @@
       opacity: 0;
       transition: opacity 1s;
       position: absolute;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
       background: white;
       z-index: 10;
     }
@@ -64,13 +66,10 @@
       loader.load('./beipink.glb', (gltf) => {
         textMesh = gltf.scene;
         textMesh.scale.set(10, 10, 10);
-        textMesh.rotation.set(0, 0, Math.PI / 2); // ✅ Z축 90도 → 정면
 
         centerMesh(textMesh);
-        applyGradientToText(textMesh);
         scene.add(textMesh);
         createParticles(textMesh);
-        rotateText();
       });
 
       window.addEventListener('resize', onWindowResize, false);
@@ -82,38 +81,6 @@
       const center = new THREE.Vector3();
       box.getCenter(center);
       mesh.position.sub(center);
-    }
-
-    function applyGradientToText(mesh) {
-      const gradientMaterial = new THREE.ShaderMaterial({
-        uniforms: {
-          color1: { value: new THREE.Color('#ffb6c1') },
-          color2: { value: new THREE.Color('#ffffff') }
-        },
-        vertexShader: `
-          varying vec3 vPos;
-          void main() {
-            vPos = position;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `,
-        fragmentShader: `
-          uniform vec3 color1;
-          uniform vec3 color2;
-          varying vec3 vPos;
-          void main() {
-            float mixAmount = (vPos.y + 10.0) / 20.0;
-            gl_FragColor = vec4(mix(color1, color2, mixAmount), 1.0);
-          }
-        `,
-        side: THREE.DoubleSide
-      });
-
-      mesh.traverse(child => {
-        if (child.isMesh) {
-          child.material = gradientMaterial;
-        }
-      });
     }
 
     function createParticles(parentMesh) {
@@ -148,59 +115,27 @@
       });
 
       particles = new THREE.Points(geometry, material);
-      particles.visible = false;
       scene.add(particles);
     }
 
-    function rotateText() {
-      gsap.to(textMesh.rotation, {
-        y: textMesh.rotation.y + Math.PI * 2,
-        duration: 15,
-        ease: "none",
+    function onMouseClick() {
+      if (!textMesh || !particles) return;
+
+      // 동시에 텍스트 + 입자 같이 왼쪽으로 이동
+      gsap.to(textMesh.position, {
+        x: -200,
+        duration: 3,
+        ease: 'power1.inOut'
+      });
+
+      gsap.to(particles.position, {
+        x: -200,
+        duration: 3,
+        ease: 'power1.inOut',
         onComplete: () => {
           document.getElementById('main-content').style.opacity = 1;
         }
       });
-    }
-
-    function onMouseClick(event) {
-      if (!textMesh || !particles) return;
-
-      scene.remove(textMesh);
-      particles.visible = true;
-
-      const pos = particles.geometry.attributes.position.array;
-      const mouse = new THREE.Vector2(
-        (event.clientX / window.innerWidth) * 2 - 1,
-        -(event.clientY / window.innerHeight) * 2 + 1
-      );
-
-      const raycaster = new THREE.Raycaster();
-      raycaster.setFromCamera(mouse, camera);
-      const clickPos = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(30));
-
-      for (let i = 0; i < particleCount; i++) {
-        const i3 = i * 3;
-        const p = new THREE.Vector3(pos[i3], pos[i3 + 1], pos[i3 + 2]);
-        const dist = p.distanceTo(clickPos);
-        const delay = dist * 0.01;
-
-        const vx = (Math.random() - 0.5) * 30;
-        const vy = (Math.random() - 0.5) * 30;
-        const vz = (Math.random() - 0.5) * 30;
-
-        gsap.to(pos, {
-          [i3]: pos[i3] + vx,
-          [i3 + 1]: pos[i3 + 1] + vy,
-          [i3 + 2]: pos[i3 + 2] + vz,
-          delay: delay,
-          duration: 2,
-          ease: "sine.out",
-          onUpdate: () => {
-            particles.geometry.attributes.position.needsUpdate = true;
-          }
-        });
-      }
     }
 
     function onWindowResize() {
